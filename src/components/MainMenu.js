@@ -249,7 +249,6 @@ const MainMenu = () => {
 
     const handleGameStarted = ({ gameSession }) => {
       setGameSession(gameSession);
-      setCountdown(10);
       setIsCountingDown(true);
     };
 
@@ -276,16 +275,6 @@ const MainMenu = () => {
       socket.off('gameReady', handleGameReady);
     };
   }, []);
-
-  useEffect(() => {
-    let timer;
-    if (countdown !== null && countdown > 0) {
-      timer = setTimeout(() => setCountdown(countdown - 1), 1000);
-    } else if (countdown === 0) {
-      setIsCountingDown(false);
-    }
-    return () => clearTimeout(timer);
-  }, [countdown]);
 
   const playCountdownSound = () => {
     const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2005/2005-preview.mp3');
@@ -558,7 +547,7 @@ const MainMenu = () => {
               />
             </HostGameModal>
           )}
-          {countdown !== null && (
+          {isCountingDown && (
             <CountdownOverlay
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}

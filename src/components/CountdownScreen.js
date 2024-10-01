@@ -21,7 +21,7 @@ function CountdownScreen({ players, onCountdownComplete }) {
           count--;
         } else {
           clearInterval(countdownInterval);
-          onCountdownComplete();
+          onCountdownComplete();  // Call onCountdownComplete directly here
         }
       }, 1000);
 
@@ -29,7 +29,7 @@ function CountdownScreen({ players, onCountdownComplete }) {
     }, 5000);
 
     return () => clearTimeout(playerDisplayTimeout);
-  }, [onCountdownComplete]);
+  }, [onCountdownComplete]);  // Remove isCountdownFinished from dependencies
 
   return (
     <FullScreenContainer>
