@@ -1,10 +1,11 @@
 // src/components/MainMenu.js
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import ProfileCreator from './ProfileCreator';
 import ProfileDisplay from './ProfileDisplay';
 import GameLobby from './GameLobby';
+import { createGame, joinGame, startGame, onPlayerJoined, onGameStarted } from '../services/socket';
 
 const CenteredContainer = styled.div`
   position: fixed;
@@ -234,6 +235,19 @@ const MainMenu = () => {
   });
   const [showLobby, setShowLobby] = useState(false);
   const [lobbyPlayers, setLobbyPlayers] = useState([]);
+  const [gameSession, setGameSession] = useState(null);
+
+  useEffect(() => {
+    onPlayerJoined(({ gameSession }) => {
+      setGameSession(gameSession);
+      setLobbyPlayers(gameSession.players);
+    });
+
+    onGameStarted(({ gameSession }) => {
+      setGameSession(gameSession);
+      // TODO: Navigate to game screen
+    });
+  }, []);
 
   const handlePlayNow = () => {
     setShowProfileCreator(true);
@@ -249,14 +263,35 @@ const MainMenu = () => {
     setShowGameCodeInput(true);
   };
 
-  const handleGameCodeSubmit = (e) => {
+  const handleGameCodeSubmit = async (e) => {
     e.preventDefault();
-    // TODO: Handle game code submission
-    console.log('Game code submitted:', gameCode);
+    try {
+      const { gameSession } = await joinGame(gameCode, profile);
+      setGameSession(gameSession);
+      setLobbyPlayers(gameSession.players);
+      setShowLobby(true);
+    } catch (error) {
+      console.error('Failed to join game:', error);
+      // TODO: Show error message to user
+    }
   };
 
-  const handleHostGame = () => {
-    setShowHostOptions(true);
+  const handleHostGame = async () => {
+    console.log('Host Game button clicked');
+    try {
+      console.log('Creating game with profile:', profile);
+      const result = await createGame(profile);
+      console.log('Game creation result:', result);
+      const { gameId, gameSession } = result;
+      setGameSession(gameSession);
+      setGameCode(gameId); // Set the game code
+      setLobbyPlayers([{ ...profile, id: gameSession.host, isHost: true }]);
+      setShowHostOptions(false);
+      setShowLobby(true);
+    } catch (error) {
+      console.error('Failed to create game:', error);
+      // TODO: Show error message to user
+    }
   };
 
   const handleGameCodeChange = (e) => {
@@ -272,15 +307,13 @@ const MainMenu = () => {
   };
 
   const handleStartGame = () => {
-    console.log('Profile when starting game:', profile); // Add this line
-    console.log('Starting game with options:', gameOptions);
-    const lobbyPlayer = { username: profile.username, isHost: true, avatar: profile.avatar };
-    console.log('Created lobby player:', lobbyPlayer); // Add this line
-    setLobbyPlayers([lobbyPlayer]);
-    setShowHostOptions(false);
-    setShowGameCodeInput(false);
-    setShowProfileCreator(false);
-    setShowLobby(true);
+    if (gameSession) {
+      startGame(gameSession.id, gameOptions);
+      // TODO: Navigate to game screen or update UI as needed
+    } else {
+      console.error('No active game session');
+      // TODO: Show error message to user
+    }
   };
 
   const handleLobbyStartGame = () => {
@@ -428,7 +461,7 @@ const MainMenu = () => {
               </HostGameButton>
             </HostGameModal>
           )}
-          {showLobby && (
+          {showLobby && gameSession && (
             <HostGameModal
               key="lobby"
               initial={{ opacity: 0, scale: 0.8 }}
@@ -437,13 +470,22 @@ const MainMenu = () => {
               transition={{ duration: 0.3 }}
             >
               <Title style={{ fontSize: '2rem', marginBottom: '1rem' }}>Game Lobby</Title>
+              {gameCode && (
+                <GameCode>
+                  Game Code: <span>{gameCode}</span>
+                  <CopyButton onClick={() => navigator.clipboard.writeText(gameCode)}>
+                    Copy
+                  </CopyButton>
+                </GameCode>
+              )}
               <GameLobby
-                players={lobbyPlayers}
-                isHost={true}
+                gameSession={gameSession}
+                isHost={gameSession.host === profile.id}
                 onStartGame={handleLobbyStartGame}
                 onBack={() => {
                   setShowLobby(false);
-                  setLobbyPlayers([]);
+                  setGameSession(null);
+                  setGameCode('');
                 }}
                 profile={profile}
               />
@@ -486,6 +528,36 @@ const SubmitButton = styled(PlayButton)`
   padding: 0.5rem 1rem;
   margin-top: 0.5rem;
   width: 200px; // Match the width of the input
+`;
+
+const GameCode = styled.div`
+  background-color: rgba(255, 255, 255, 0.1);
+  padding: 10px;
+  border-radius: 5px;
+  margin-bottom: 15px;
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  span {
+    font-weight: bold;
+    margin-right: 10px;
+  }
+`;
+
+const CopyButton = styled.button`
+  background-color: #4a00e0;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+
+  &:hover {
+    background-color: #5c16e0;
+  }
 `;
 
 export default MainMenu;

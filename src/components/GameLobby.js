@@ -1,34 +1,45 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { motion } from 'framer-motion';
+import { sendMessage, onNewMessage } from '../services/socket';
 
-const GameLobby = ({ players, isHost, onStartGame, onBack, profile }) => {
+const GameLobby = ({ gameSession, isHost, onStartGame, onBack, profile }) => {
   const [chatMessage, setChatMessage] = useState('');
   const [chatMessages, setChatMessages] = useState([]);
 
+  useEffect(() => {
+    onNewMessage((message) => {
+      setChatMessages((prevMessages) => [...prevMessages, message]);
+    });
+  }, []);
+
   const handleSendMessage = (e) => {
     e.preventDefault();
-    if (chatMessage.trim()) {
+    if (chatMessage.trim() && gameSession) {
       const newMessage = {
         sender: profile.username,
         avatar: profile.avatar,
         content: chatMessage.trim(),
         timestamp: new Date().toLocaleTimeString(),
       };
-      setChatMessages([...chatMessages, newMessage]);
+      sendMessage(gameSession.id, newMessage);
       setChatMessage('');
     }
   };
 
+  if (!gameSession || !gameSession.players) {
+    return <div>Loading...</div>;
+  }
+
   return (
     <LobbyContainer>
       <PlayerList>
-        {players.map((player, index) => (
+        {gameSession.players.map((player, index) => (
           <PlayerItem key={index}>
             {player.avatar && (
               <PlayerAvatar>{player.avatar}</PlayerAvatar>
             )}
-            <PlayerName>{player.username} {player.isHost ? '(Host)' : ''}</PlayerName>
+            <PlayerName>{player.username} {player.id === gameSession.host ? '(Host)' : ''}</PlayerName>
           </PlayerItem>
         ))}
       </PlayerList>
