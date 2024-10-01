@@ -212,6 +212,13 @@ const Checkbox = styled.input`
   }
 `;
 
+const HostGameButton = styled(PlayButton)`
+  font-size: 1rem;
+  padding: 0.5rem 1rem;
+  margin-top: 1rem;
+  width: 200px;
+`;
+
 const MainMenu = () => {
   const [showProfileCreator, setShowProfileCreator] = useState(false);
   const [profile, setProfile] = useState(null);
@@ -265,14 +272,14 @@ const MainMenu = () => {
 
   const handleStartGame = () => {
     console.log('Starting game with options:', gameOptions);
-    // Create a lobby with the host player and dummy players
     setLobbyPlayers([
       { username: profile.username, isHost: true, avatar: profile.avatar },
-      // Add some dummy players for demonstration
       { username: 'Player 2', isHost: false, avatar: 'avatar2' },
       { username: 'Player 3', isHost: false, avatar: 'avatar3' },
     ]);
     setShowHostOptions(false);
+    setShowGameCodeInput(false);
+    setShowProfileCreator(false);
     setShowLobby(true);
   };
 
@@ -349,6 +356,9 @@ const MainMenu = () => {
               <SubmitButton type="submit">
                 <ButtonText>Join</ButtonText>
               </SubmitButton>
+              <SubmitButton type="button" onClick={() => setShowGameCodeInput(false)}>
+                <ButtonText>Back</ButtonText>
+              </SubmitButton>
             </GameCodeForm>
           )}
           {showHostOptions && (
@@ -406,18 +416,33 @@ const MainMenu = () => {
                   Allow Movement
                 </CheckboxLabel>
               </OptionGroup>
-              <PlayButton onClick={handleStartGame}>
+              <HostGameButton onClick={handleStartGame}>
                 <ButtonText>Start Game</ButtonText>
-              </PlayButton>
+              </HostGameButton>
+              <HostGameButton onClick={() => setShowHostOptions(false)}>
+                <ButtonText>Back</ButtonText>
+              </HostGameButton>
             </HostGameModal>
           )}
           {showLobby && (
-            <GameLobby
-              players={lobbyPlayers}
-              isHost={true}
-              onStartGame={handleLobbyStartGame}
-              profile={profile}
-            />
+            <HostGameModal
+              key="lobby"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+            >
+              <Title style={{ fontSize: '2rem', marginBottom: '1rem' }}>Game Lobby</Title>
+              <GameLobby
+                players={lobbyPlayers}
+                isHost={true}
+                onStartGame={handleLobbyStartGame}
+                onBack={() => {
+                  setShowLobby(false);
+                  setLobbyPlayers([]);
+                }}
+                profile={profile}
+              />
+            </HostGameModal>
           )}
         </AnimatePresence>
       </CenteredContainer>
@@ -454,6 +479,8 @@ const GameCodeInput = styled.input`
 const SubmitButton = styled(PlayButton)`
   font-size: 1rem;
   padding: 0.5rem 1rem;
+  margin-top: 0.5rem;
+  width: 200px; // Match the width of the input
 `;
 
 export default MainMenu;
