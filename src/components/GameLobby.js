@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { motion } from 'framer-motion';
 import socket, { sendMessage, onNewMessage } from '../services/socket';
+import CountdownScreen from './CountdownScreen';
 
 const playMessageSound = () => {
   const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/1998/1998-preview.mp3');
@@ -18,6 +19,7 @@ function GameLobby({ gameSession, isHost, onStartGame, onBack, profile, isCounti
   const [chatMessages, setChatMessages] = useState([]);
   const [countdownText, setCountdownText] = useState('');
   const [isCountdownActive, setIsCountdownActive] = useState(false);
+  const [showCountdownScreen, setShowCountdownScreen] = useState(false);
 
   useEffect(() => {
     const handleNewMessage = (message) => {
@@ -49,7 +51,7 @@ function GameLobby({ gameSession, isHost, onStartGame, onBack, profile, isCounti
 
   const handleStartGame = () => {
     setIsCountdownActive(true);
-    // Start the countdown
+    // Start the initial countdown
     let count = 3;
     const countdownInterval = setInterval(() => {
       if (count > 0) {
@@ -59,10 +61,15 @@ function GameLobby({ gameSession, isHost, onStartGame, onBack, profile, isCounti
       } else {
         clearInterval(countdownInterval);
         setCountdownText("Go!");
-        playCountdownSound(); // Play sound for "Go!" as well
-        onStartGame();
+        playCountdownSound();
+        // Transition to the CountdownScreen
+        setShowCountdownScreen(true);
       }
     }, 1000);
+  };
+
+  const handleCountdownComplete = () => {
+    onStartGame();
   };
 
   if (!gameSession || !gameSession.players) {
@@ -70,65 +77,74 @@ function GameLobby({ gameSession, isHost, onStartGame, onBack, profile, isCounti
   }
 
   return (
-    <LobbyContainer>
-      <PlayerList>
-        {gameSession.players.map((player, index) => (
-          <PlayerItem key={index}>
-            {player.avatar && (
-              <PlayerAvatar>{player.avatar}</PlayerAvatar>
-            )}
-            <PlayerName>{player.username} {player.id === gameSession.host ? '(Host)' : ''}</PlayerName>
-          </PlayerItem>
-        ))}
-      </PlayerList>
-      <ChatContainer>
-        <ChatMessages>
-          {chatMessages.map((msg, index) => (
-            <ChatMessage key={index}>
-              <PlayerAvatar>{msg.avatar}</PlayerAvatar>
-              <MessageContent>
-                <MessageSender>{msg.sender}</MessageSender>
-                <MessageText>{msg.content}</MessageText>
-              </MessageContent>
-              <MessageTime>{msg.timestamp}</MessageTime>
-            </ChatMessage>
-          ))}
-        </ChatMessages>
-        <ChatForm onSubmit={handleSendMessage}>
-          <ChatInput
-            type="text"
-            placeholder="Type a message..."
-            value={chatMessage}
-            onChange={(e) => setChatMessage(e.target.value)}
-          />
-          <SendButton type="submit">Send</SendButton>
-        </ChatForm>
-      </ChatContainer>
-      {isHost ? (
-        <LobbyButton
-          whileHover={{ scale: isCountdownActive ? 1 : 1.05 }}
-          whileTap={{ scale: isCountdownActive ? 1 : 0.95 }}
-          onClick={handleStartGame}
-          disabled={isCountdownActive}
-          style={{ opacity: isCountdownActive ? 0.5 : 1, cursor: isCountdownActive ? 'not-allowed' : 'pointer' }}
-        >
-          <ButtonText>{isCountdownActive ? countdownText || 'Game Starting...' : 'Start Game'}</ButtonText>
-        </LobbyButton>
+    <>
+      {showCountdownScreen ? (
+        <CountdownScreen 
+          players={gameSession.players} 
+          onCountdownComplete={handleCountdownComplete} 
+        />
       ) : (
-        <WaitingMessage>
-          {isCountdownActive ? countdownText || 'Game is starting...' : 'Waiting for host to start the game...'}
-        </WaitingMessage>
+        <LobbyContainer>
+          <PlayerList>
+            {gameSession.players.map((player, index) => (
+              <PlayerItem key={index}>
+                {player.avatar && (
+                  <PlayerAvatar>{player.avatar}</PlayerAvatar>
+                )}
+                <PlayerName>{player.username} {player.id === gameSession.host ? '(Host)' : ''}</PlayerName>
+              </PlayerItem>
+            ))}
+          </PlayerList>
+          <ChatContainer>
+            <ChatMessages>
+              {chatMessages.map((msg, index) => (
+                <ChatMessage key={index}>
+                  <PlayerAvatar>{msg.avatar}</PlayerAvatar>
+                  <MessageContent>
+                    <MessageSender>{msg.sender}</MessageSender>
+                    <MessageText>{msg.content}</MessageText>
+                  </MessageContent>
+                  <MessageTime>{msg.timestamp}</MessageTime>
+                </ChatMessage>
+              ))}
+            </ChatMessages>
+            <ChatForm onSubmit={handleSendMessage}>
+              <ChatInput
+                type="text"
+                placeholder="Type a message..."
+                value={chatMessage}
+                onChange={(e) => setChatMessage(e.target.value)}
+              />
+              <SendButton type="submit">Send</SendButton>
+            </ChatForm>
+          </ChatContainer>
+          {isHost ? (
+            <LobbyButton
+              whileHover={{ scale: isCountdownActive ? 1 : 1.05 }}
+              whileTap={{ scale: isCountdownActive ? 1 : 0.95 }}
+              onClick={handleStartGame}
+              disabled={isCountdownActive}
+              style={{ opacity: isCountdownActive ? 0.5 : 1, cursor: isCountdownActive ? 'not-allowed' : 'pointer' }}
+            >
+              <ButtonText>{isCountdownActive ? countdownText || 'Game Starting...' : 'Start Game'}</ButtonText>
+            </LobbyButton>
+          ) : (
+            <WaitingMessage>
+              {isCountdownActive ? countdownText || 'Game is starting...' : 'Waiting for host to start the game...'}
+            </WaitingMessage>
+          )}
+          <LobbyButton
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={onBack}
+            disabled={isCountingDown}
+            style={{ opacity: isCountingDown ? 0.5 : 1, cursor: isCountingDown ? 'not-allowed' : 'pointer' }}
+          >
+            <ButtonText>Back</ButtonText>
+          </LobbyButton>
+        </LobbyContainer>
       )}
-      <LobbyButton
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        onClick={onBack}
-        disabled={isCountingDown}
-        style={{ opacity: isCountingDown ? 0.5 : 1, cursor: isCountingDown ? 'not-allowed' : 'pointer' }}
-      >
-        <ButtonText>Back</ButtonText>
-      </LobbyButton>
-    </LobbyContainer>
+    </>
   );
 }
 
