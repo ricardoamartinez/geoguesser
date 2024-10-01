@@ -3,18 +3,22 @@ import styled, { keyframes } from 'styled-components';
 import { motion } from 'framer-motion';
 
 const GameLobby = ({ players, isHost, onStartGame, onBack, profile }) => {
-  console.log('GameLobby players:', players); // Add this line
+  console.log('GameLobby players:', players);
+  console.log('GameLobby profile:', profile);
   return (
     <LobbyContainer>
       <PlayerList>
-        {players.map((player, index) => (
-          <PlayerItem key={index}>
-            {player.avatar && (
-              <PlayerAvatar src={player.avatar} alt={`${player.username}'s avatar`} />
-            )}
-            <PlayerName>{player.username} {player.isHost ? '(Host)' : ''}</PlayerName>
-          </PlayerItem>
-        ))}
+        {players.map((player, index) => {
+          console.log('Rendering player:', player);
+          return (
+            <PlayerItem key={index}>
+              {player.avatar && (
+                <PlayerAvatar>{player.avatar}</PlayerAvatar>
+              )}
+              <PlayerName>{player.username} {player.isHost ? '(Host)' : ''}</PlayerName>
+            </PlayerItem>
+          );
+        })}
       </PlayerList>
       <ChatInput type="text" placeholder="Type a message..." />
       {isHost && (
@@ -58,10 +62,8 @@ const PlayerItem = styled.div`
   border-radius: 25px;
 `;
 
-const PlayerAvatar = styled.img`
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
+const PlayerAvatar = styled.span`
+  font-size: 2rem;
   margin-right: 10px;
 `;
 

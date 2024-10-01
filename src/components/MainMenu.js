@@ -240,6 +240,7 @@ const MainMenu = () => {
   };
 
   const handleProfileComplete = (newProfile) => {
+    console.log('New profile set:', newProfile); // Add this line
     setProfile(newProfile);
     setShowProfileCreator(false);
   };
@@ -271,10 +272,11 @@ const MainMenu = () => {
   };
 
   const handleStartGame = () => {
+    console.log('Profile when starting game:', profile); // Add this line
     console.log('Starting game with options:', gameOptions);
-    setLobbyPlayers([
-      { username: profile.username, isHost: true, avatar: profile.avatar },
-    ]);
+    const lobbyPlayer = { username: profile.username, isHost: true, avatar: profile.avatar };
+    console.log('Created lobby player:', lobbyPlayer); // Add this line
+    setLobbyPlayers([lobbyPlayer]);
     setShowHostOptions(false);
     setShowGameCodeInput(false);
     setShowProfileCreator(false);
