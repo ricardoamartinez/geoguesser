@@ -15,6 +15,7 @@ const CenteredContainer = styled.div`
   justify-content: center;
   align-items: center;
   z-index: 10;
+  pointer-events: none;
 `;
 
 const MenuContent = styled(motion.div)`
@@ -65,6 +66,7 @@ const PlayButton = styled(motion.button)`
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
+  pointer-events: auto;
 
   &:before {
     content: '';
