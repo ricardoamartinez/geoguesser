@@ -44,14 +44,17 @@ export const sendMessage = (gameId, message) => {
 };
 
 export const onPlayerJoined = (callback) => {
+  socket.off('playerJoined'); // Remove any existing listeners
   socket.on('playerJoined', callback);
 };
 
 export const onGameStarted = (callback) => {
+  socket.off('gameStarted'); // Remove any existing listeners
   socket.on('gameStarted', callback);
 };
 
 export const onNewMessage = (callback) => {
+  socket.off('newMessage'); // Remove any existing listeners
   socket.on('newMessage', callback);
 };
 

@@ -61,7 +61,7 @@ io.on('connection', (socket) => {
 
   socket.on('startGame', ({ gameId, gameOptions }) => {
     const gameSession = gameSessions.get(gameId);
-    if (gameSession && socket.id === gameSession.host) {
+    if (gameSession && socket.id === gameSession.host && gameSession.status !== 'playing') {
       gameSession.status = 'playing';
       gameSession.gameOptions = gameOptions;
       io.to(gameId).emit('gameStarted', { gameSession });

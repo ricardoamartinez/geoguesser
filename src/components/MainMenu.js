@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import ProfileCreator from './ProfileCreator';
 import ProfileDisplay from './ProfileDisplay';
 import GameLobby from './GameLobby';
-import { createGame, joinGame, startGame, onPlayerJoined, onGameStarted } from '../services/socket';
+import socket, { createGame, joinGame, startGame, onPlayerJoined, onGameStarted } from '../services/socket';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -239,14 +239,32 @@ const MainMenu = () => {
   const [gameSession, setGameSession] = useState(null);
 
   useEffect(() => {
-    onPlayerJoined(({ gameSession }) => {
+    const handlePlayerJoined = ({ gameSession }) => {
       setGameSession(gameSession);
-    });
+    };
 
-    onGameStarted(({ gameSession }) => {
+    const handleGameStarted = ({ gameSession }) => {
       setGameSession(gameSession);
+      console.log('Game started:', gameSession);
+      toast.success('Game is starting!', {
+        position: "top-right",
+        autoClose: 2000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
       // TODO: Navigate to game screen
-    });
+    };
+
+    onPlayerJoined(handlePlayerJoined);
+    onGameStarted(handleGameStarted);
+
+    return () => {
+      // Clean up event listeners
+      socket.off('playerJoined', handlePlayerJoined);
+      socket.off('gameStarted', handleGameStarted);
+    };
   }, []);
 
   const handlePlayNow = () => {
@@ -335,8 +353,20 @@ const MainMenu = () => {
   };
 
   const handleLobbyStartGame = () => {
-    // TODO: Implement actual game start logic
-    console.log('Starting the game from lobby');
+    if (gameSession) {
+      startGame(gameSession.id, gameOptions);
+      // Remove the toast from here, as it will be handled by the gameStarted event
+    } else {
+      console.error('No active game session');
+      toast.error('Unable to start game. No active session.', {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+    }
   };
 
   return (
@@ -498,7 +528,7 @@ const MainMenu = () => {
               )}
               <GameLobby
                 gameSession={gameSession}
-                isHost={gameSession.host === profile.id}
+                isHost={gameSession.host === socket.id}
                 onStartGame={handleLobbyStartGame}
                 onBack={() => {
                   setShowLobby(false);

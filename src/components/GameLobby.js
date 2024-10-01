@@ -75,7 +75,7 @@ const GameLobby = ({ gameSession, isHost, onStartGame, onBack, profile }) => {
           <SendButton type="submit">Send</SendButton>
         </ChatForm>
       </ChatContainer>
-      {isHost && (
+      {isHost ? (
         <LobbyButton
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
@@ -83,6 +83,8 @@ const GameLobby = ({ gameSession, isHost, onStartGame, onBack, profile }) => {
         >
           <ButtonText>Start Game</ButtonText>
         </LobbyButton>
+      ) : (
+        <WaitingMessage>Waiting for host to start the game...</WaitingMessage>
       )}
       <LobbyButton
         whileHover={{ scale: 1.05 }}
@@ -249,6 +251,13 @@ const LobbyButton = styled(motion.button)`
 const ButtonText = styled.span`
   position: relative;
   z-index: 1;
+`;
+
+const WaitingMessage = styled.div`
+  color: #ff00de;
+  font-size: 1.2rem;
+  margin: 20px 0;
+  text-align: center;
 `;
 
 export default GameLobby;
