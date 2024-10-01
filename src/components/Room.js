@@ -7,13 +7,9 @@ const Room = ({ players, roomCode }) => {
   const [gameState, setGameState] = useState('countdown');
 
   const handleCountdownComplete = () => {
-    console.log('Countdown complete, setting gameState to playing');
+    console.log('Room: Countdown complete, setting gameState to playing');
     setGameState('playing');
   };
-
-  useEffect(() => {
-    console.log('Current gameState:', gameState);
-  }, [gameState]);
 
   return (
     <RoomContainer>
@@ -23,7 +19,9 @@ const Room = ({ players, roomCode }) => {
           onCountdownComplete={handleCountdownComplete} 
         />
       )}
-      <GameScreen players={players} gameState={gameState} />
+      {gameState === 'playing' && (
+        <GameScreen players={players} gameState={gameState} roomCode={roomCode} />
+      )}
     </RoomContainer>
   );
 };

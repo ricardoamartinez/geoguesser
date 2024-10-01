@@ -4,7 +4,9 @@ function StreetView({ lat, lng }) {
   const streetViewRef = useRef(null);
 
   useEffect(() => {
-    if (streetViewRef.current) {
+    console.log('StreetView: useEffect triggered. lat:', lat, 'lng:', lng);
+    if (streetViewRef.current && window.google && window.google.maps) {
+      console.log('StreetView: Creating StreetViewPanorama');
       new window.google.maps.StreetViewPanorama(
         streetViewRef.current,
         {
@@ -13,6 +15,8 @@ function StreetView({ lat, lng }) {
           zoom: 1,
         }
       );
+    } else {
+      console.error('StreetView: Google Maps API not loaded or streetViewRef not available');
     }
   }, [lat, lng]);
 

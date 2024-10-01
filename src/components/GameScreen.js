@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import StreetView from './StreetView';
 
 const GameScreen = ({ players, gameState }) => {
@@ -8,15 +8,22 @@ const GameScreen = ({ players, gameState }) => {
   const [location, setLocation] = useState({ lat: 0, lng: 0 });
 
   useEffect(() => {
+    console.log('GameScreen: useEffect triggered. gameState:', gameState, 'showStreetView:', showStreetView);
     if (gameState === 'playing' && !showStreetView) {
       const randomLat = Math.random() * 180 - 90;
       const randomLng = Math.random() * 360 - 180;
+      console.log('GameScreen: Setting new location:', { lat: randomLat, lng: randomLng });
       setLocation({ lat: randomLat, lng: randomLng });
       setShowStreetView(true);
     }
   }, [gameState, showStreetView]);
 
-  console.log('GameScreen rendered. gameState:', gameState, 'showStreetView:', showStreetView);
+  console.log('GameScreen: Rendered. gameState:', gameState, 'showStreetView:', showStreetView, 'location:', location);
+
+  if (gameState !== 'playing') {
+    console.log('GameScreen: Not rendering, game not in playing state');
+    return null;
+  }
 
   return (
     <GameScreenContainer>
@@ -27,10 +34,12 @@ const GameScreen = ({ players, gameState }) => {
           <PlayerPoints>Points: {player.points || 0}</PlayerPoints>
         </PlayerCard>
       ))}
-      {showStreetView && (
+      {showStreetView ? (
         <StreetViewContainer>
           <StreetView lat={location.lat} lng={location.lng} />
         </StreetViewContainer>
+      ) : (
+        <div>Loading StreetView...</div>
       )}
     </GameScreenContainer>
   );

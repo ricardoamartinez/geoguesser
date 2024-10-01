@@ -9,51 +9,43 @@ const playCountdownSound = () => {
 
 function CountdownScreen({ players, onCountdownComplete }) {
   const [countdownText, setCountdownText] = useState('');
-  const [showPlayers, setShowPlayers] = useState(true);
 
   useEffect(() => {
-    const playerDisplayTimeout = setTimeout(() => {
-      setShowPlayers(false);
-      let count = 5; // Changed from 10 to 5 for faster testing
-      const countdownInterval = setInterval(() => {
-        if (count > 0) {
-          setCountdownText(count.toString());
-          playCountdownSound();
-          count--;
-        } else {
-          clearInterval(countdownInterval);
-          setCountdownText('GO!');
-          setTimeout(() => {
-            onCountdownComplete();
-          }, 1000); // Show 'GO!' for 1 second before completing
-        }
-      }, 1000);
+    let count = 5;
+    const countdownInterval = setInterval(() => {
+      if (count > 0) {
+        setCountdownText(count.toString());
+        playCountdownSound();
+        count--;
+      } else {
+        clearInterval(countdownInterval);
+        setCountdownText('GO!');
+        setTimeout(() => {
+          console.log('CountdownScreen: Countdown complete, calling onCountdownComplete');
+          onCountdownComplete();
+        }, 1000);
+      }
+    }, 1000);
 
-      return () => clearInterval(countdownInterval);
-    }, 3000); // Reduced from 5000 to 3000 for faster testing
-
-    return () => clearTimeout(playerDisplayTimeout);
-  }, [onCountdownComplete]);  // Remove isCountdownFinished from dependencies
+    return () => clearInterval(countdownInterval);
+  }, []); // Empty dependency array to ensure it only runs once
 
   // Use React Portal to render the CountdownScreen at the end of the DOM
   return ReactDOM.createPortal(
     <FullScreenContainer>
       <CenteredContent>
-        {showPlayers ? (
-          <PlayerList>
-            {players.map((player, index) => (
-              <PlayerItem key={index}>
-                <PlayerAvatar>{player.avatar}</PlayerAvatar>
-                <PlayerInfo>
-                  <PlayerName>{player.username}</PlayerName>
-                  <PlayerPoints>Points: {player.points || 0}</PlayerPoints>
-                </PlayerInfo>
-              </PlayerItem>
-            ))}
-          </PlayerList>
-        ) : (
-          <CountdownText>{countdownText}</CountdownText>
-        )}
+        <PlayerList>
+          {players.map((player, index) => (
+            <PlayerItem key={index}>
+              <PlayerAvatar>{player.avatar}</PlayerAvatar>
+              <PlayerInfo>
+                <PlayerName>{player.username}</PlayerName>
+                <PlayerPoints>Points: {player.points || 0}</PlayerPoints>
+              </PlayerInfo>
+            </PlayerItem>
+          ))}
+        </PlayerList>
+        <CountdownText>{countdownText}</CountdownText>
       </CenteredContent>
     </FullScreenContainer>,
     document.body // Render the portal to the body

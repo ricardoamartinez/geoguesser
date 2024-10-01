@@ -9,6 +9,7 @@ import socket, { createGame, joinGame, startGame, onPlayerJoined, onGameStarted,
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import GameScreen from './GameScreen';
+import Room from './Room'; // Add this import
 
 const CenteredContainer = styled.div`
   position: fixed;
@@ -257,48 +258,21 @@ const MainMenu = ({ onStartGame }) => {
   });
   const [showLobby, setShowLobby] = useState(false);
   const [gameSession, setGameSession] = useState(null);
-  const [countdown, setCountdown] = useState(null);
   const [gameStarted, setGameStarted] = useState(false);
-  const [isCountingDown, setIsCountingDown] = useState(false);
+  const [showRoom, setShowRoom] = useState(false);
 
   useEffect(() => {
-    const handlePlayerJoined = ({ gameSession }) => {
-      setGameSession(gameSession);
-    };
-
     const handleGameStarted = ({ gameSession }) => {
       setGameSession(gameSession);
-      setIsCountingDown(true);
+      setShowRoom(true);
     };
 
-    const handleCountdownUpdate = ({ countdown }) => {
-      setCountdown(countdown);
-      playCountdownSound();
-    };
-
-    const handleGameReady = ({ gameSession }) => {
-      setGameStarted(true);
-      setIsCountingDown(false);
-    };
-
-    onPlayerJoined(handlePlayerJoined);
     onGameStarted(handleGameStarted);
-    onCountdownUpdate(handleCountdownUpdate);
-    onGameReady(handleGameReady);
 
     return () => {
-      // Clean up event listeners
-      socket.off('playerJoined', handlePlayerJoined);
       socket.off('gameStarted', handleGameStarted);
-      socket.off('countdownUpdate', handleCountdownUpdate);
-      socket.off('gameReady', handleGameReady);
     };
   }, []);
-
-  const playCountdownSound = () => {
-    const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2005/2005-preview.mp3');
-    audio.play().catch(error => console.error('Error playing sound:', error));
-  };
 
   const handlePlayNow = () => {
     setShowProfileCreator(true);
@@ -386,10 +360,14 @@ const MainMenu = ({ onStartGame }) => {
   };
 
   const handleLobbyStartGame = () => {
-    if (gameSession && !isCountingDown) {
+    if (gameSession) {
       startGame(gameSession.id, gameOptions);
     }
   };
+
+  if (showRoom) {
+    return <Room players={gameSession.players} roomCode={gameSession.id} />;
+  }
 
   if (gameStarted) {
     return <GameScreen players={gameSession.players} />;
@@ -561,18 +539,8 @@ const MainMenu = ({ onStartGame }) => {
                   setGameCode('');
                 }}
                 profile={profile}
-                isCountingDown={isCountingDown}
               />
             </HostGameModal>
-          )}
-          {isCountingDown && (
-            <CountdownOverlay
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-            >
-              <CountdownText>{countdown}</CountdownText>
-            </CountdownOverlay>
           )}
         </AnimatePresence>
       </CenteredContainer>
@@ -656,25 +624,6 @@ const CopyButton = styled.button`
     transform: translateY(0);
     box-shadow: none;
   }
-`;
-
-const CountdownOverlay = styled(motion.div)`
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background-color: rgba(0, 0, 0, 0.8);
-  z-index: 1000;
-`;
-
-const CountdownText = styled.div`
-  font-size: 10rem;
-  color: #ffffff;
-  animation: ${glowAnimation} 1s ease-in-out infinite alternate;
 `;
 
 export default MainMenu;
