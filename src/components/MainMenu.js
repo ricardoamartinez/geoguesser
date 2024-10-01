@@ -274,8 +274,6 @@ const MainMenu = () => {
     console.log('Starting game with options:', gameOptions);
     setLobbyPlayers([
       { username: profile.username, isHost: true, avatar: profile.avatar },
-      { username: 'Player 2', isHost: false, avatar: 'avatar2' },
-      { username: 'Player 3', isHost: false, avatar: 'avatar3' },
     ]);
     setShowHostOptions(false);
     setShowGameCodeInput(false);
