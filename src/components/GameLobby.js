@@ -1,26 +1,60 @@
-import React from 'react';
+import React, { useState } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { motion } from 'framer-motion';
 
 const GameLobby = ({ players, isHost, onStartGame, onBack, profile }) => {
-  console.log('GameLobby players:', players);
-  console.log('GameLobby profile:', profile);
+  const [chatMessage, setChatMessage] = useState('');
+  const [chatMessages, setChatMessages] = useState([]);
+
+  const handleSendMessage = (e) => {
+    e.preventDefault();
+    if (chatMessage.trim()) {
+      const newMessage = {
+        sender: profile.username,
+        avatar: profile.avatar,
+        content: chatMessage.trim(),
+        timestamp: new Date().toLocaleTimeString(),
+      };
+      setChatMessages([...chatMessages, newMessage]);
+      setChatMessage('');
+    }
+  };
+
   return (
     <LobbyContainer>
       <PlayerList>
-        {players.map((player, index) => {
-          console.log('Rendering player:', player);
-          return (
-            <PlayerItem key={index}>
-              {player.avatar && (
-                <PlayerAvatar>{player.avatar}</PlayerAvatar>
-              )}
-              <PlayerName>{player.username} {player.isHost ? '(Host)' : ''}</PlayerName>
-            </PlayerItem>
-          );
-        })}
+        {players.map((player, index) => (
+          <PlayerItem key={index}>
+            {player.avatar && (
+              <PlayerAvatar>{player.avatar}</PlayerAvatar>
+            )}
+            <PlayerName>{player.username} {player.isHost ? '(Host)' : ''}</PlayerName>
+          </PlayerItem>
+        ))}
       </PlayerList>
-      <ChatInput type="text" placeholder="Type a message..." />
+      <ChatContainer>
+        <ChatMessages>
+          {chatMessages.map((msg, index) => (
+            <ChatMessage key={index}>
+              <PlayerAvatar>{msg.avatar}</PlayerAvatar>
+              <MessageContent>
+                <MessageSender>{msg.sender}</MessageSender>
+                <MessageText>{msg.content}</MessageText>
+              </MessageContent>
+              <MessageTime>{msg.timestamp}</MessageTime>
+            </ChatMessage>
+          ))}
+        </ChatMessages>
+        <ChatForm onSubmit={handleSendMessage}>
+          <ChatInput
+            type="text"
+            placeholder="Type a message..."
+            value={chatMessage}
+            onChange={(e) => setChatMessage(e.target.value)}
+          />
+          <SendButton type="submit">Send</SendButton>
+        </ChatForm>
+      </ChatContainer>
       {isHost && (
         <LobbyButton
           whileHover={{ scale: 1.05 }}
@@ -46,6 +80,8 @@ const LobbyContainer = styled.div`
   flex-direction: column;
   align-items: center;
   width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
 `;
 
 const PlayerList = styled.div`
@@ -72,14 +108,74 @@ const PlayerName = styled.span`
   font-size: 1rem;
 `;
 
-const ChatInput = styled.input`
-  width: 90%;
+const ChatContainer = styled.div`
+  width: 100%;
+  max-height: 300px;
+  overflow-y: auto;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  margin-bottom: 15px;
+`;
+
+const ChatMessages = styled.div`
   padding: 10px;
-  margin: 10px 0;
+`;
+
+const ChatMessage = styled.div`
+  display: flex;
+  align-items: start;
+  margin-bottom: 10px;
+`;
+
+const MessageContent = styled.div`
+  flex-grow: 1;
+  margin-left: 10px;
+`;
+
+const MessageSender = styled.div`
+  font-weight: bold;
+  color: #ff00de;
+`;
+
+const MessageText = styled.div`
+  color: white;
+`;
+
+const MessageTime = styled.div`
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.5);
+`;
+
+const ChatForm = styled.form`
+  display: flex;
+  padding: 10px;
+`;
+
+const ChatInput = styled.input`
+  flex-grow: 1;
+  padding: 10px;
   border-radius: 20px;
   border: none;
   background-color: rgba(255, 255, 255, 0.1);
   color: white;
+  margin-right: 10px;
+
+  &::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+  }
+`;
+
+const SendButton = styled.button`
+  padding: 10px 20px;
+  border-radius: 20px;
+  border: none;
+  background-color: #4a00e0;
+  color: white;
+  cursor: pointer;
+
+  &:hover {
+    background-color: #5c16e0;
+  }
 `;
 
 const pulseAnimation = keyframes`
