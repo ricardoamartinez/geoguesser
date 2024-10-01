@@ -291,13 +291,14 @@ const MainMenu = () => {
   return (
     <>
       <CenteredContainer>
-        <AnimatePresence>
+        <AnimatePresence mode="wait">
           {!showProfileCreator && !profile && (
             <MenuContent
               key="menu"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              transition={{ duration: 0.3 }}
             >
               <Title
                 initial={{ opacity: 0, y: -50 }}
@@ -318,9 +319,10 @@ const MainMenu = () => {
           {profile && !showGameCodeInput && !showHostOptions && !showLobby && (
             <MenuContent
               key="options"
-              initial={{ opacity: 0, y: 50 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 50 }}
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              transition={{ duration: 0.3 }}
             >
               <MenuButton
                 whileHover={{ scale: 1.05 }}
@@ -341,9 +343,10 @@ const MainMenu = () => {
           {showGameCodeInput && (
             <GameCodeForm
               key="gameCodeForm"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              transition={{ duration: 0.3 }}
               onSubmit={handleGameCodeSubmit}
             >
               <GameCodeInput
@@ -364,9 +367,10 @@ const MainMenu = () => {
           {showHostOptions && (
             <HostGameModal
               key="hostOptions"
-              initial={{ opacity: 0, scale: 0.9 }}
+              initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              transition={{ duration: 0.3 }}
             >
               <Title style={{ fontSize: '2rem', marginBottom: '1rem' }}>Host Game</Title>
               <OptionGroup>
@@ -427,9 +431,10 @@ const MainMenu = () => {
           {showLobby && (
             <HostGameModal
               key="lobby"
-              initial={{ opacity: 0, scale: 0.9 }}
+              initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              transition={{ duration: 0.3 }}
             >
               <Title style={{ fontSize: '2rem', marginBottom: '1rem' }}>Game Lobby</Title>
               <GameLobby
