@@ -4,6 +4,7 @@ import styled, { keyframes } from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import ProfileCreator from './ProfileCreator';
 import ProfileDisplay from './ProfileDisplay';
+import GameLobby from './GameLobby';
 
 const CenteredContainer = styled.div`
   position: fixed;
@@ -224,6 +225,8 @@ const MainMenu = () => {
     roundCount: 5,
     moveAllowed: true,
   });
+  const [showLobby, setShowLobby] = useState(false);
+  const [lobbyPlayers, setLobbyPlayers] = useState([]);
 
   const handlePlayNow = () => {
     setShowProfileCreator(true);
@@ -262,7 +265,20 @@ const MainMenu = () => {
 
   const handleStartGame = () => {
     console.log('Starting game with options:', gameOptions);
-    // TODO: Implement game start logic
+    // Create a lobby with the host player and dummy players
+    setLobbyPlayers([
+      { username: profile.username, isHost: true, avatar: profile.avatar },
+      // Add some dummy players for demonstration
+      { username: 'Player 2', isHost: false, avatar: 'avatar2' },
+      { username: 'Player 3', isHost: false, avatar: 'avatar3' },
+    ]);
+    setShowHostOptions(false);
+    setShowLobby(true);
+  };
+
+  const handleLobbyStartGame = () => {
+    // TODO: Implement actual game start logic
+    console.log('Starting the game from lobby');
   };
 
   return (
@@ -292,7 +308,7 @@ const MainMenu = () => {
               </PlayButton>
             </MenuContent>
           )}
-          {profile && !showGameCodeInput && !showHostOptions && (
+          {profile && !showGameCodeInput && !showHostOptions && !showLobby && (
             <MenuContent
               key="options"
               initial={{ opacity: 0, y: 50 }}
@@ -395,10 +411,18 @@ const MainMenu = () => {
               </PlayButton>
             </HostGameModal>
           )}
+          {showLobby && (
+            <GameLobby
+              players={lobbyPlayers}
+              isHost={true}
+              onStartGame={handleLobbyStartGame}
+              profile={profile}
+            />
+          )}
         </AnimatePresence>
       </CenteredContainer>
       {showProfileCreator && <ProfileCreator onComplete={handleProfileComplete} />}
-      {profile && <ProfileDisplay profile={profile} />}
+      {profile && !showLobby && <ProfileDisplay profile={profile} />}
     </>
   );
 };
