@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import ReactDOM from 'react-dom'; // Import ReactDOM for portals
 import styled, { keyframes } from 'styled-components';
 
 const playCountdownSound = () => {
@@ -31,7 +32,8 @@ function CountdownScreen({ players, onCountdownComplete }) {
     return () => clearTimeout(playerDisplayTimeout);
   }, [onCountdownComplete]);  // Remove isCountdownFinished from dependencies
 
-  return (
+  // Use React Portal to render the CountdownScreen at the end of the DOM
+  return ReactDOM.createPortal(
     <FullScreenContainer>
       <CenteredContent>
         {showPlayers ? (
@@ -50,7 +52,8 @@ function CountdownScreen({ players, onCountdownComplete }) {
           <CountdownText>{countdownText}</CountdownText>
         )}
       </CenteredContent>
-    </FullScreenContainer>
+    </FullScreenContainer>,
+    document.body // Render the portal to the body
   );
 }
 
@@ -59,6 +62,7 @@ const glowAnimation = keyframes`
   100% { text-shadow: 0 0 2.5px #fff, 0 0 5px #fff, 0 0 7.5px #fff, 0 0 10px #ff00de, 0 0 17.5px #ff00de, 0 0 20px #ff00de, 0 0 25px #ff00de, 0 0 37.5px #ff00de; }
 `;
 
+// Update the FullScreenContainer to ensure proper centering
 const FullScreenContainer = styled.div`
   position: fixed;
   top: 0;
@@ -66,11 +70,19 @@ const FullScreenContainer = styled.div`
   width: 100vw;
   height: 100vh;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: #000;
-  color: #fff;
-  z-index: 1000;
+  align-items: center; // Center vertically
+  justify-content: center; // Center horizontally
+  background-color: rgba(0, 0, 0, 0.8);
+  z-index: 9999; // Increase z-index to ensure it's on top
+`;
+
+// Ensure CountdownText is centered and responsive
+const CountdownText = styled.div`
+  font-size: 10vmin; // Responsive font size
+  font-weight: bold;
+  animation: ${glowAnimation} 1s ease-in-out infinite alternate;
+  color: #ffffff;
+  text-align: center; // Center text horizontally
 `;
 
 const CenteredContent = styled.div`
@@ -78,6 +90,7 @@ const CenteredContent = styled.div`
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  text-align: center; // Ensure text is centered
   width: 100%;
   height: 100%;
 `;
@@ -121,12 +134,6 @@ const PlayerName = styled.span`
 const PlayerPoints = styled.span`
   font-size: 1.2rem;
   color: #ff00de;
-`;
-
-const CountdownText = styled.div`
-  font-size: 20rem;
-  font-weight: bold;
-  animation: ${glowAnimation} 1s ease-in-out infinite alternate;
 `;
 
 export default CountdownScreen;
