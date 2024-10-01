@@ -223,7 +223,26 @@ const HostGameButton = styled(PlayButton)`
   width: 200px;
 `;
 
-const MainMenu = () => {
+const fadeVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { 
+    opacity: 1, 
+    y: 0,
+    transition: {
+      type: "spring",
+      stiffness: 300,
+      damping: 20,
+      duration: 0.4
+    }
+  },
+  exit: { 
+    opacity: 0, 
+    y: 20, 
+    transition: { duration: 0.2 }
+  }
+};
+
+const MainMenu = ({ onStartGame }) => {
   const [showProfileCreator, setShowProfileCreator] = useState(false);
   const [profile, setProfile] = useState(null);
   const [showGameCodeInput, setShowGameCodeInput] = useState(false);
@@ -383,10 +402,10 @@ const MainMenu = () => {
           {!showProfileCreator && !profile && (
             <MenuContent
               key="menu"
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.8 }}
-              transition={{ duration: 0.3 }}
+              variants={fadeVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
             >
               <Title
                 initial={{ opacity: 0, y: -50 }}
@@ -407,10 +426,10 @@ const MainMenu = () => {
           {profile && !showGameCodeInput && !showHostOptions && !showLobby && (
             <MenuContent
               key="options"
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.8 }}
-              transition={{ duration: 0.3 }}
+              variants={fadeVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
             >
               <MenuButton
                 whileHover={{ scale: 1.05 }}
@@ -431,11 +450,10 @@ const MainMenu = () => {
           {showGameCodeInput && (
             <GameCodeForm
               key="gameCodeForm"
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.8 }}
-              transition={{ duration: 0.3 }}
-              onSubmit={handleGameCodeSubmit}
+              variants={fadeVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
             >
               <GameCodeInput
                 type="text"
@@ -455,10 +473,10 @@ const MainMenu = () => {
           {showHostOptions && (
             <HostGameModal
               key="hostOptions"
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.8 }}
-              transition={{ duration: 0.3 }}
+              variants={fadeVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
             >
               <Title style={{ fontSize: '2rem', marginBottom: '1rem' }}>Host Game</Title>
               <OptionGroup>
@@ -519,10 +537,10 @@ const MainMenu = () => {
           {showLobby && gameSession && (
             <HostGameModal
               key="lobby"
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.8 }}
-              transition={{ duration: 0.3 }}
+              variants={fadeVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
             >
               <Title style={{ fontSize: '2rem', marginBottom: '1rem' }}>Game Lobby</Title>
               {gameCode && (
