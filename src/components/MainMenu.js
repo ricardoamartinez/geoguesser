@@ -125,11 +125,105 @@ const MenuButton = styled(PlayButton)`
   margin-bottom: 1rem;
 `;
 
+const HostGameModal = styled(motion.div)`
+  background: rgba(0, 0, 0, 0.8);
+  border-radius: 15px;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 400px;
+  width: 90%;
+  pointer-events: auto;
+`;
+
+const OptionGroup = styled.div`
+  margin-bottom: 1rem;
+  width: 100%;
+`;
+
+const OptionLabel = styled.label`
+  color: #ffffff;
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+  display: block;
+`;
+
+const Select = styled.select`
+  width: 100%;
+  padding: 0.5rem;
+  border-radius: 25px;
+  background: rgba(74, 0, 224, 0.2);
+  color: #ffffff;
+  border: 2px solid #4a00e0;
+  font-size: 1rem;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  padding-right: 2rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.7rem top 50%;
+  background-size: 1rem auto;
+
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(74, 0, 224, 0.5);
+  }
+
+  option {
+    background-color: #2a0080;
+    color: #ffffff;
+  }
+`;
+
+const CheckboxLabel = styled(OptionLabel)`
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+`;
+
+const Checkbox = styled.input`
+  margin-right: 0.5rem;
+  appearance: none;
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  border: 2px solid #4a00e0;
+  border-radius: 4px;
+  background-color: rgba(74, 0, 224, 0.2);
+  cursor: pointer;
+  position: relative;
+
+  &:checked {
+    background-color: #4a00e0;
+  }
+
+  &:checked::after {
+    content: '✔';
+    font-size: 14px;
+    color: white;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+`;
+
 const MainMenu = () => {
   const [showProfileCreator, setShowProfileCreator] = useState(false);
   const [profile, setProfile] = useState(null);
   const [showGameCodeInput, setShowGameCodeInput] = useState(false);
   const [gameCode, setGameCode] = useState('');
+  const [showHostOptions, setShowHostOptions] = useState(false);
+  const [gameOptions, setGameOptions] = useState({
+    locationType: 'any',
+    region: 'world',
+    timeLimit: 60,
+    roundCount: 5,
+    moveAllowed: true,
+  });
 
   const handlePlayNow = () => {
     setShowProfileCreator(true);
@@ -151,12 +245,24 @@ const MainMenu = () => {
   };
 
   const handleHostGame = () => {
-    console.log('Host Game clicked');
-    // Implement host game logic here
+    setShowHostOptions(true);
   };
 
   const handleGameCodeChange = (e) => {
     setGameCode(e.target.value);
+  };
+
+  const handleOptionChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setGameOptions(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
+  };
+
+  const handleStartGame = () => {
+    console.log('Starting game with options:', gameOptions);
+    // TODO: Implement game start logic
   };
 
   return (
@@ -186,7 +292,7 @@ const MainMenu = () => {
               </PlayButton>
             </MenuContent>
           )}
-          {profile && !showGameCodeInput && (
+          {profile && !showGameCodeInput && !showHostOptions && (
             <MenuContent
               key="options"
               initial={{ opacity: 0, y: 50 }}
@@ -228,6 +334,66 @@ const MainMenu = () => {
                 <ButtonText>Join</ButtonText>
               </SubmitButton>
             </GameCodeForm>
+          )}
+          {showHostOptions && (
+            <HostGameModal
+              key="hostOptions"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+            >
+              <Title style={{ fontSize: '2rem', marginBottom: '1rem' }}>Host Game</Title>
+              <OptionGroup>
+                <OptionLabel>Location Type</OptionLabel>
+                <Select name="locationType" value={gameOptions.locationType} onChange={handleOptionChange}>
+                  <option value="any">Any</option>
+                  <option value="capitals">Capitals Only</option>
+                  <option value="landmarks">Famous Landmarks</option>
+                </Select>
+              </OptionGroup>
+              <OptionGroup>
+                <OptionLabel>Region</OptionLabel>
+                <Select name="region" value={gameOptions.region} onChange={handleOptionChange}>
+                  <option value="world">Worldwide</option>
+                  <option value="europe">Europe</option>
+                  <option value="asia">Asia</option>
+                  <option value="americas">Americas</option>
+                  <option value="africa">Africa</option>
+                  <option value="oceania">Oceania</option>
+                </Select>
+              </OptionGroup>
+              <OptionGroup>
+                <OptionLabel>Time Limit (seconds)</OptionLabel>
+                <Select name="timeLimit" value={gameOptions.timeLimit} onChange={handleOptionChange}>
+                  <option value="30">30</option>
+                  <option value="60">60</option>
+                  <option value="120">120</option>
+                  <option value="300">300</option>
+                </Select>
+              </OptionGroup>
+              <OptionGroup>
+                <OptionLabel>Number of Rounds</OptionLabel>
+                <Select name="roundCount" value={gameOptions.roundCount} onChange={handleOptionChange}>
+                  <option value="3">3</option>
+                  <option value="5">5</option>
+                  <option value="10">10</option>
+                </Select>
+              </OptionGroup>
+              <OptionGroup>
+                <CheckboxLabel>
+                  <Checkbox
+                    type="checkbox"
+                    name="moveAllowed"
+                    checked={gameOptions.moveAllowed}
+                    onChange={handleOptionChange}
+                  />
+                  Allow Movement
+                </CheckboxLabel>
+              </OptionGroup>
+              <PlayButton onClick={handleStartGame}>
+                <ButtonText>Start Game</ButtonText>
+              </PlayButton>
+            </HostGameModal>
           )}
         </AnimatePresence>
       </CenteredContainer>
