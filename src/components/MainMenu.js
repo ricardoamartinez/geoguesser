@@ -6,6 +6,8 @@ import ProfileCreator from './ProfileCreator';
 import ProfileDisplay from './ProfileDisplay';
 import GameLobby from './GameLobby';
 import { createGame, joinGame, startGame, onPlayerJoined, onGameStarted } from '../services/socket';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const CenteredContainer = styled.div`
   position: fixed;
@@ -234,13 +236,11 @@ const MainMenu = () => {
     moveAllowed: true,
   });
   const [showLobby, setShowLobby] = useState(false);
-  const [lobbyPlayers, setLobbyPlayers] = useState([]);
   const [gameSession, setGameSession] = useState(null);
 
   useEffect(() => {
     onPlayerJoined(({ gameSession }) => {
       setGameSession(gameSession);
-      setLobbyPlayers(gameSession.players);
     });
 
     onGameStarted(({ gameSession }) => {
@@ -263,16 +263,35 @@ const MainMenu = () => {
     setShowGameCodeInput(true);
   };
 
+  const handleCopyGameCode = () => {
+    navigator.clipboard.writeText(gameCode);
+    toast.success('Game code copied to clipboard!', {
+      position: "top-right",
+      autoClose: 2000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+    });
+  };
+
   const handleGameCodeSubmit = async (e) => {
     e.preventDefault();
     try {
       const { gameSession } = await joinGame(gameCode, profile);
       setGameSession(gameSession);
-      setLobbyPlayers(gameSession.players);
+      setShowGameCodeInput(false);
       setShowLobby(true);
     } catch (error) {
       console.error('Failed to join game:', error);
-      // TODO: Show error message to user
+      toast.error('Failed to join game. Please check the game code and try again.', {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
     }
   };
 
@@ -284,8 +303,7 @@ const MainMenu = () => {
       console.log('Game creation result:', result);
       const { gameId, gameSession } = result;
       setGameSession(gameSession);
-      setGameCode(gameId); // Set the game code
-      setLobbyPlayers([{ ...profile, id: gameSession.host, isHost: true }]);
+      setGameCode(gameId);
       setShowHostOptions(false);
       setShowLobby(true);
     } catch (error) {
@@ -473,7 +491,7 @@ const MainMenu = () => {
               {gameCode && (
                 <GameCode>
                   Game Code: <span>{gameCode}</span>
-                  <CopyButton onClick={() => navigator.clipboard.writeText(gameCode)}>
+                  <CopyButton onClick={handleCopyGameCode}>
                     Copy
                   </CopyButton>
                 </GameCode>
@@ -495,6 +513,7 @@ const MainMenu = () => {
       </CenteredContainer>
       {showProfileCreator && <ProfileCreator onComplete={handleProfileComplete} />}
       {profile && !showLobby && <ProfileDisplay profile={profile} />}
+      <ToastContainer />
     </>
   );
 };
@@ -532,17 +551,21 @@ const SubmitButton = styled(PlayButton)`
 
 const GameCode = styled.div`
   background-color: rgba(255, 255, 255, 0.1);
-  padding: 10px;
-  border-radius: 5px;
-  margin-bottom: 15px;
+  padding: 15px;
+  border-radius: 10px;
+  margin-bottom: 20px;
   font-size: 1.2rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  border: 2px solid #4a00e0;
+  box-shadow: 0 0 10px rgba(74, 0, 224, 0.3);
 
   span {
     font-weight: bold;
-    margin-right: 10px;
+    margin-right: 15px;
+    color: #ff00de;
+    letter-spacing: 2px;
   }
 `;
 
@@ -550,13 +573,23 @@ const CopyButton = styled.button`
   background-color: #4a00e0;
   color: white;
   border: none;
-  padding: 5px 10px;
+  padding: 8px 15px;
   border-radius: 5px;
   cursor: pointer;
-  transition: background-color 0.3s;
+  transition: all 0.3s ease;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 
   &:hover {
     background-color: #5c16e0;
+    transform: translateY(-2px);
+    box-shadow: 0 2px 5px rgba(92, 22, 224, 0.3);
+  }
+
+  &:active {
+    transform: translateY(0);
+    box-shadow: none;
   }
 `;
 

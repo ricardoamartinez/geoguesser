@@ -1,16 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { motion } from 'framer-motion';
-import { sendMessage, onNewMessage } from '../services/socket';
+import socket, { sendMessage, onNewMessage } from '../services/socket';
 
 const GameLobby = ({ gameSession, isHost, onStartGame, onBack, profile }) => {
   const [chatMessage, setChatMessage] = useState('');
   const [chatMessages, setChatMessages] = useState([]);
 
   useEffect(() => {
-    onNewMessage((message) => {
+    const handleNewMessage = (message) => {
       setChatMessages((prevMessages) => [...prevMessages, message]);
-    });
+    };
+
+    onNewMessage(handleNewMessage);
+
+    return () => {
+      // Clean up the event listener
+      socket.off('newMessage', handleNewMessage);
+    };
   }, []);
 
   const handleSendMessage = (e) => {
@@ -24,6 +31,8 @@ const GameLobby = ({ gameSession, isHost, onStartGame, onBack, profile }) => {
       };
       sendMessage(gameSession.id, newMessage);
       setChatMessage('');
+      // Remove this line to prevent duplicate messages
+      // setChatMessages((prevMessages) => [...prevMessages, newMessage]);
     }
   };
 

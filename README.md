@@ -1,70 +1,100 @@
-# Getting Started with Create React App
+# GeoGuesser
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+GeoGuesser is an interactive, multiplayer geography game where players guess locations based on visual clues. Built with React and Socket.IO, it offers a fun and engaging way to test and improve your geographical knowledge.
 
-## Available Scripts
+## Features
 
-In the project directory, you can run:
+- Real-time multiplayer gameplay
+- Custom game lobbies with shareable codes
+- Chat functionality within game lobbies
+- Customizable game settings (location type, region, time limit, rounds, movement allowance)
+- Interactive 3D starry background
+- Responsive design for various screen sizes
 
-### `npm start`
+## Technologies Used
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+- React
+- Node.js
+- Express
+- Socket.IO
+- Three.js
+- Styled Components
+- Framer Motion
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## Prerequisites
 
-### `npm test`
+Before you begin, ensure you have met the following requirements:
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+- Node.js (v14.0.0 or later)
+- npm (v6.0.0 or later)
 
-### `npm run build`
+## Installation
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+1. Clone the repository:
+   ```
+   git clone https://github.com/yourusername/geoguesser.git
+   cd geoguesser
+   ```
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+2. Install the dependencies for both the client and server:
+   ```
+   npm install
+   cd server
+   npm install
+   cd ..
+   ```
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+3. Create a `.env` file in the root directory and add any necessary environment variables.
 
-### `npm run eject`
+## Running the Application
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+1. Start the server:
+   ```
+   cd server
+   node server.js
+   ```
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+2. In a new terminal, start the React app:
+   ```
+   npm start
+   ```
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+3. Open your browser and navigate to `http://localhost:3000`
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+## Game Rules
 
-## Learn More
+1. Create a profile or join as a guest
+2. Host a new game or join an existing one with a game code
+3. Wait for all players to join in the lobby
+4. The host can start the game when ready
+5. Each round, players are shown a location and must guess where it is on the map
+6. Points are awarded based on the accuracy of the guess and the time taken
+7. The player with the most points at the end of all rounds wins
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+## Contributing
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+Contributions to GeoGuesser are welcome! Please follow these steps:
 
-### Code Splitting
+1. Fork the project
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a pull request
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+## License
 
-### Analyzing the Bundle Size
+This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+## Acknowledgments
 
-### Making a Progressive Web App
+- [React](https://reactjs.org/)
+- [Socket.IO](https://socket.io/)
+- [Three.js](https://threejs.org/)
+- [Styled Components](https://styled-components.com/)
+- [Framer Motion](https://www.framer.com/motion/)
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+## Contact
 
-### Advanced Configuration
+Your Name - your.email@example.com
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+Project Link: [https://github.com/yourusername/geoguesser](https://github.com/yourusername/geoguesser)

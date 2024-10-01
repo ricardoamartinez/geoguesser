@@ -54,10 +54,12 @@ const StarryBackground = () => {
 
     window.addEventListener('resize', handleResize);
 
+    const currentMount = mountRef.current;
+
     return () => {
-      if (mountRef.current) {
+      if (currentMount) {
         window.removeEventListener('resize', handleResize);
-        mountRef.current.removeChild(renderer.domElement);
+        currentMount.removeChild(renderer.domElement);
       }
     };
   }, []);
