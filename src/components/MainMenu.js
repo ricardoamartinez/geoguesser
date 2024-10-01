@@ -128,6 +128,8 @@ const MenuButton = styled(PlayButton)`
 const MainMenu = () => {
   const [showProfileCreator, setShowProfileCreator] = useState(false);
   const [profile, setProfile] = useState(null);
+  const [showGameCodeInput, setShowGameCodeInput] = useState(false);
+  const [gameCode, setGameCode] = useState('');
 
   const handlePlayNow = () => {
     setShowProfileCreator(true);
@@ -139,13 +141,22 @@ const MainMenu = () => {
   };
 
   const handleJoinGame = () => {
-    console.log('Join Game clicked');
-    // Implement join game logic here
+    setShowGameCodeInput(true);
+  };
+
+  const handleGameCodeSubmit = (e) => {
+    e.preventDefault();
+    // TODO: Handle game code submission
+    console.log('Game code submitted:', gameCode);
   };
 
   const handleHostGame = () => {
     console.log('Host Game clicked');
     // Implement host game logic here
+  };
+
+  const handleGameCodeChange = (e) => {
+    setGameCode(e.target.value);
   };
 
   return (
@@ -175,7 +186,7 @@ const MainMenu = () => {
               </PlayButton>
             </MenuContent>
           )}
-          {profile && (
+          {profile && !showGameCodeInput && (
             <MenuContent
               key="options"
               initial={{ opacity: 0, y: 50 }}
@@ -198,6 +209,26 @@ const MainMenu = () => {
               </MenuButton>
             </MenuContent>
           )}
+          {showGameCodeInput && (
+            <GameCodeForm
+              key="gameCodeForm"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20 }}
+              onSubmit={handleGameCodeSubmit}
+            >
+              <GameCodeInput
+                type="text"
+                value={gameCode}
+                onChange={handleGameCodeChange}
+                placeholder="Enter game code"
+                autoFocus
+              />
+              <SubmitButton type="submit">
+                <ButtonText>Join</ButtonText>
+              </SubmitButton>
+            </GameCodeForm>
+          )}
         </AnimatePresence>
       </CenteredContainer>
       {showProfileCreator && <ProfileCreator onComplete={handleProfileComplete} />}
@@ -205,5 +236,34 @@ const MainMenu = () => {
     </>
   );
 };
+
+const GameCodeForm = styled(motion.form)`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 1rem;
+`;
+
+const GameCodeInput = styled.input`
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+  border: 2px solid #4a00e0;
+  border-radius: 25px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  margin-bottom: 0.5rem;
+  width: 200px;
+  text-align: center;
+  pointer-events: auto;
+
+  &::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+  }
+`;
+
+const SubmitButton = styled(PlayButton)`
+  font-size: 1rem;
+  padding: 0.5rem 1rem;
+`;
 
 export default MainMenu;
