@@ -3,9 +3,21 @@ import styled, { keyframes } from 'styled-components';
 import { motion } from 'framer-motion';
 import socket, { sendMessage, onNewMessage } from '../services/socket';
 
-const GameLobby = ({ gameSession, isHost, onStartGame, onBack, profile }) => {
+const playMessageSound = () => {
+  const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/1998/1998-preview.mp3');
+  audio.play().catch(error => console.error('Error playing sound:', error));
+};
+
+const playCountdownSound = () => {
+  const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3');
+  audio.play().catch(error => console.error('Error playing countdown sound:', error));
+};
+
+function GameLobby({ gameSession, isHost, onStartGame, onBack, profile, isCountingDown }) {
   const [chatMessage, setChatMessage] = useState('');
   const [chatMessages, setChatMessages] = useState([]);
+  const [countdownText, setCountdownText] = useState('');
+  const [isCountdownActive, setIsCountdownActive] = useState(false);
 
   useEffect(() => {
     const handleNewMessage = (message) => {
@@ -31,9 +43,26 @@ const GameLobby = ({ gameSession, isHost, onStartGame, onBack, profile }) => {
       };
       sendMessage(gameSession.id, newMessage);
       setChatMessage('');
-      // Remove this line to prevent duplicate messages
-      // setChatMessages((prevMessages) => [...prevMessages, newMessage]);
+      playMessageSound();
     }
+  };
+
+  const handleStartGame = () => {
+    setIsCountdownActive(true);
+    // Start the countdown
+    let count = 3;
+    const countdownInterval = setInterval(() => {
+      if (count > 0) {
+        setCountdownText(count.toString());
+        playCountdownSound();
+        count--;
+      } else {
+        clearInterval(countdownInterval);
+        setCountdownText("Go!");
+        playCountdownSound(); // Play sound for "Go!" as well
+        onStartGame();
+      }
+    }, 1000);
   };
 
   if (!gameSession || !gameSession.players) {
@@ -77,25 +106,31 @@ const GameLobby = ({ gameSession, isHost, onStartGame, onBack, profile }) => {
       </ChatContainer>
       {isHost ? (
         <LobbyButton
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={onStartGame}
+          whileHover={{ scale: isCountdownActive ? 1 : 1.05 }}
+          whileTap={{ scale: isCountdownActive ? 1 : 0.95 }}
+          onClick={handleStartGame}
+          disabled={isCountdownActive}
+          style={{ opacity: isCountdownActive ? 0.5 : 1, cursor: isCountdownActive ? 'not-allowed' : 'pointer' }}
         >
-          <ButtonText>Start Game</ButtonText>
+          <ButtonText>{isCountdownActive ? countdownText || 'Game Starting...' : 'Start Game'}</ButtonText>
         </LobbyButton>
       ) : (
-        <WaitingMessage>Waiting for host to start the game...</WaitingMessage>
+        <WaitingMessage>
+          {isCountdownActive ? countdownText || 'Game is starting...' : 'Waiting for host to start the game...'}
+        </WaitingMessage>
       )}
       <LobbyButton
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         onClick={onBack}
+        disabled={isCountingDown}
+        style={{ opacity: isCountingDown ? 0.5 : 1, cursor: isCountingDown ? 'not-allowed' : 'pointer' }}
       >
         <ButtonText>Back</ButtonText>
       </LobbyButton>
     </LobbyContainer>
   );
-};
+}
 
 const LobbyContainer = styled.div`
   display: flex;

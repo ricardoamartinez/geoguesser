@@ -5,9 +5,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import ProfileCreator from './ProfileCreator';
 import ProfileDisplay from './ProfileDisplay';
 import GameLobby from './GameLobby';
-import socket, { createGame, joinGame, startGame, onPlayerJoined, onGameStarted } from '../services/socket';
+import socket, { createGame, joinGame, startGame, onPlayerJoined, onGameStarted, onCountdownUpdate, onGameReady } from '../services/socket';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import GameScreen from './GameScreen';
 
 const CenteredContainer = styled.div`
   position: fixed;
@@ -237,6 +238,9 @@ const MainMenu = () => {
   });
   const [showLobby, setShowLobby] = useState(false);
   const [gameSession, setGameSession] = useState(null);
+  const [countdown, setCountdown] = useState(null);
+  const [gameStarted, setGameStarted] = useState(false);
+  const [isCountingDown, setIsCountingDown] = useState(false);
 
   useEffect(() => {
     const handlePlayerJoined = ({ gameSession }) => {
@@ -245,27 +249,48 @@ const MainMenu = () => {
 
     const handleGameStarted = ({ gameSession }) => {
       setGameSession(gameSession);
-      console.log('Game started:', gameSession);
-      toast.success('Game is starting!', {
-        position: "top-right",
-        autoClose: 2000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-      });
-      // TODO: Navigate to game screen
+      setCountdown(10);
+      setIsCountingDown(true);
+    };
+
+    const handleCountdownUpdate = ({ countdown }) => {
+      setCountdown(countdown);
+      playCountdownSound();
+    };
+
+    const handleGameReady = ({ gameSession }) => {
+      setGameStarted(true);
+      setIsCountingDown(false);
     };
 
     onPlayerJoined(handlePlayerJoined);
     onGameStarted(handleGameStarted);
+    onCountdownUpdate(handleCountdownUpdate);
+    onGameReady(handleGameReady);
 
     return () => {
       // Clean up event listeners
       socket.off('playerJoined', handlePlayerJoined);
       socket.off('gameStarted', handleGameStarted);
+      socket.off('countdownUpdate', handleCountdownUpdate);
+      socket.off('gameReady', handleGameReady);
     };
   }, []);
+
+  useEffect(() => {
+    let timer;
+    if (countdown !== null && countdown > 0) {
+      timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+    } else if (countdown === 0) {
+      setIsCountingDown(false);
+    }
+    return () => clearTimeout(timer);
+  }, [countdown]);
+
+  const playCountdownSound = () => {
+    const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2005/2005-preview.mp3');
+    audio.play().catch(error => console.error('Error playing sound:', error));
+  };
 
   const handlePlayNow = () => {
     setShowProfileCreator(true);
@@ -353,21 +378,14 @@ const MainMenu = () => {
   };
 
   const handleLobbyStartGame = () => {
-    if (gameSession) {
+    if (gameSession && !isCountingDown) {
       startGame(gameSession.id, gameOptions);
-      // Remove the toast from here, as it will be handled by the gameStarted event
-    } else {
-      console.error('No active game session');
-      toast.error('Unable to start game. No active session.', {
-        position: "top-right",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-      });
     }
   };
+
+  if (gameStarted) {
+    return <GameScreen players={gameSession.players} />;
+  }
 
   return (
     <>
@@ -536,8 +554,18 @@ const MainMenu = () => {
                   setGameCode('');
                 }}
                 profile={profile}
+                isCountingDown={isCountingDown}
               />
             </HostGameModal>
+          )}
+          {countdown !== null && (
+            <CountdownOverlay
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <CountdownText>{countdown}</CountdownText>
+            </CountdownOverlay>
           )}
         </AnimatePresence>
       </CenteredContainer>
@@ -621,6 +649,25 @@ const CopyButton = styled.button`
     transform: translateY(0);
     box-shadow: none;
   }
+`;
+
+const CountdownOverlay = styled(motion.div)`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: rgba(0, 0, 0, 0.8);
+  z-index: 1000;
+`;
+
+const CountdownText = styled.div`
+  font-size: 10rem;
+  color: #ffffff;
+  animation: ${glowAnimation} 1s ease-in-out infinite alternate;
 `;
 
 export default MainMenu;

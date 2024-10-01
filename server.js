@@ -62,9 +62,22 @@ io.on('connection', (socket) => {
   socket.on('startGame', ({ gameId, gameOptions }) => {
     const gameSession = gameSessions.get(gameId);
     if (gameSession && socket.id === gameSession.host && gameSession.status !== 'playing') {
-      gameSession.status = 'playing';
+      gameSession.status = 'countdown';
       gameSession.gameOptions = gameOptions;
       io.to(gameId).emit('gameStarted', { gameSession });
+      
+      // Start the countdown
+      let countdown = 10;
+      const countdownInterval = setInterval(() => {
+        countdown--;
+        if (countdown <= 0) {
+          clearInterval(countdownInterval);
+          gameSession.status = 'playing';
+          io.to(gameId).emit('gameReady', { gameSession });
+        } else {
+          io.to(gameId).emit('countdownUpdate', { countdown });
+        }
+      }, 1000);
     }
   });
 

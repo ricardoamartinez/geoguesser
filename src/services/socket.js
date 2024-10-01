@@ -58,4 +58,14 @@ export const onNewMessage = (callback) => {
   socket.on('newMessage', callback);
 };
 
+export const onCountdownUpdate = (callback) => {
+  socket.off('countdownUpdate');
+  socket.on('countdownUpdate', callback);
+};
+
+export const onGameReady = (callback) => {
+  socket.off('gameReady');
+  socket.on('gameReady', callback);
+};
+
 export default socket;
