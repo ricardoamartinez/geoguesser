@@ -14,20 +14,23 @@ function CountdownScreen({ players, onCountdownComplete }) {
   useEffect(() => {
     const playerDisplayTimeout = setTimeout(() => {
       setShowPlayers(false);
-      let count = 10;
+      let count = 5; // Changed from 10 to 5 for faster testing
       const countdownInterval = setInterval(() => {
-        if (count >= 0) {
+        if (count > 0) {
           setCountdownText(count.toString());
           playCountdownSound();
           count--;
         } else {
           clearInterval(countdownInterval);
-          onCountdownComplete();  // Call onCountdownComplete directly here
+          setCountdownText('GO!');
+          setTimeout(() => {
+            onCountdownComplete();
+          }, 1000); // Show 'GO!' for 1 second before completing
         }
       }, 1000);
 
       return () => clearInterval(countdownInterval);
-    }, 5000);
+    }, 3000); // Reduced from 5000 to 3000 for faster testing
 
     return () => clearTimeout(playerDisplayTimeout);
   }, [onCountdownComplete]);  // Remove isCountdownFinished from dependencies
