@@ -126,14 +126,15 @@ const TimerText = styled.span`
   text-shadow: 0 0 5px #8a2be2;
 `;
 
-const pulse = keyframes`
+const timerPulse = keyframes`
   0% { box-shadow: 0 0 0 0 rgba(255, 0, 222, 0.7); }
-  70% { box-shadow: 0 0 0 10px rgba(255, 0, 222, 0); }
+  50% { box-shadow: 0 0 10px 3px rgba(255, 0, 222, 0.7); }
   100% { box-shadow: 0 0 0 0 rgba(255, 0, 222, 0); }
 `;
 
 const PulsingTimerContainer = styled(TimerContainer)`
-  animation: ${pulse} 2s infinite;
+  animation: ${timerPulse} 1s linear infinite;
+  animation-play-state: ${props => props.isPulsing ? 'running' : 'paused'};
 `;
 
 const StreetViewComponent = ({ lat, lng, heading, pitch, allowMovement, profile, onGuess, initialTime, onTimeUp }) => {
@@ -151,6 +152,7 @@ const StreetViewComponent = ({ lat, lng, heading, pitch, allowMovement, profile,
   const [mapCenter, setMapCenter] = useState({ lat: 0, lng: 0 });
   const [compassRotation, setCompassRotation] = useState(0);
   const [timeLeft, setTimeLeft] = useState(initialTime);
+  const [isPulsing, setIsPulsing] = useState(true);
 
   useEffect(() => {
     if (timeLeft <= 0) {
@@ -159,7 +161,13 @@ const StreetViewComponent = ({ lat, lng, heading, pitch, allowMovement, profile,
     }
 
     const timer = setInterval(() => {
-      setTimeLeft(prevTime => prevTime - 1);
+      setTimeLeft(prevTime => {
+        const newTime = prevTime - 1;
+        // Reset the pulsing state to trigger a new animation cycle
+        setIsPulsing(false);
+        setTimeout(() => setIsPulsing(true), 0);
+        return newTime;
+      });
     }, 1000);
 
     return () => clearInterval(timer);
@@ -645,7 +653,7 @@ const StreetViewComponent = ({ lat, lng, heading, pitch, allowMovement, profile,
           <CompassText x="20" y="53" textAnchor="middle" filter="url(#glow)">W</CompassText>
         </CompassSVG>
       </CompassContainer>
-      <PulsingTimerContainer>
+      <PulsingTimerContainer isPulsing={isPulsing}>
         <TimerText>{formatTime(timeLeft)}</TimerText>
       </PulsingTimerContainer>
       <AnimatePresence>
