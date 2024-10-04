@@ -50,6 +50,7 @@ const StreetViewComponent = ({ lat, lng, heading, pitch, allowMovement, profile,
   const [markerPosition, setMarkerPosition] = useState(null);
   const markerRef = useRef(null);
   const [isMapVisible, setIsMapVisible] = useState(true);
+  const [mapInstance, setMapInstance] = useState(null);
 
   useEffect(() => {
     if (!window.google) {
@@ -87,6 +88,12 @@ const StreetViewComponent = ({ lat, lng, heading, pitch, allowMovement, profile,
   useEffect(() => {
     console.log('Profile received in StreetViewComponent:', profile);
   }, [profile]);
+
+  useEffect(() => {
+    if (mapsLoaded && isMapVisible) {
+      initializeMap();
+    }
+  }, [mapsLoaded, isMapVisible]);
 
   const initializeStreetView = () => {
     if (!window.google || !window.google.maps) {
@@ -221,6 +228,8 @@ const StreetViewComponent = ({ lat, lng, heading, pitch, allowMovement, profile,
       styles: darkModeStyle,
     });
 
+    setMapInstance(map);
+
     map.addListener('click', (e) => {
       if (markerRef.current) {
         markerRef.current.setMap(null);
@@ -264,7 +273,6 @@ const StreetViewComponent = ({ lat, lng, heading, pitch, allowMovement, profile,
       markerRef.current = newMarker;
       setMarkerPosition(e.latLng);
 
-      // Add dragend event listener to update marker position
       newMarker.addListener('dragend', (event) => {
         setMarkerPosition(event.latLng);
       });
