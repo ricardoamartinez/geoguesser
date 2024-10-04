@@ -255,6 +255,7 @@ const MainMenu = ({ onStartGame }) => {
     timeLimit: 60,
     roundCount: 5,
     moveAllowed: true,
+    filter: 'none', // Add this line
   });
   const [showLobby, setShowLobby] = useState(false);
   const [gameSession, setGameSession] = useState(null);
@@ -320,21 +321,8 @@ const MainMenu = ({ onStartGame }) => {
     }
   };
 
-  const handleHostGame = async () => {
-    console.log('Host Game button clicked');
-    try {
-      console.log('Creating game with profile:', profile);
-      const result = await createGame(profile);
-      console.log('Game creation result:', result);
-      const { gameId, gameSession } = result;
-      setGameSession(gameSession);
-      setGameCode(gameId);
-      setShowHostOptions(false);
-      setShowLobby(true);
-    } catch (error) {
-      console.error('Failed to create game:', error);
-      // TODO: Show error message to user
-    }
+  const handleHostGame = () => {
+    setShowHostOptions(true);
   };
 
   const handleGameCodeChange = (e) => {
@@ -365,6 +353,22 @@ const MainMenu = ({ onStartGame }) => {
     }
   };
 
+  const handleCreateGame = async () => {
+    try {
+      console.log('Creating game with profile:', profile);
+      const result = await createGame(profile);
+      console.log('Game creation result:', result);
+      const { gameId, gameSession } = result;
+      setGameSession(gameSession);
+      setGameCode(gameId);
+      setShowHostOptions(false);
+      setShowLobby(true);
+    } catch (error) {
+      console.error('Failed to create game:', error);
+      // TODO: Show error message to user
+    }
+  };
+
   if (showRoom) {
     return <Room players={gameSession.players} roomCode={gameSession.id} />;
   }
@@ -372,6 +376,14 @@ const MainMenu = ({ onStartGame }) => {
   if (gameStarted) {
     return <GameScreen players={gameSession.players} />;
   }
+
+  console.log('Render state:', { 
+    showProfileCreator, 
+    profile, 
+    showGameCodeInput, 
+    showHostOptions, 
+    showLobby 
+  });
 
   return (
     <>
@@ -494,6 +506,17 @@ const MainMenu = ({ onStartGame }) => {
                 </Select>
               </OptionGroup>
               <OptionGroup>
+                <OptionLabel>Filter</OptionLabel>
+                <Select name="filter" value={gameOptions.filter} onChange={handleOptionChange}>
+                  <option value="none">None</option>
+                  <option value="grayscale(100%)">Grayscale</option>
+                  <option value="sepia(100%)">Sepia</option>
+                  <option value="invert(100%)">Inverted</option>
+                  <option value="hue-rotate(180deg)">Hue Rotate</option>
+                  <option value="blur(5px)">Blur</option>
+                </Select>
+              </OptionGroup>
+              <OptionGroup>
                 <CheckboxLabel>
                   <Checkbox
                     type="checkbox"
@@ -504,8 +527,8 @@ const MainMenu = ({ onStartGame }) => {
                   Allow Movement
                 </CheckboxLabel>
               </OptionGroup>
-              <HostGameButton onClick={handleStartGame}>
-                <ButtonText>Start Game</ButtonText>
+              <HostGameButton onClick={handleCreateGame}>
+                <ButtonText>Create Game</ButtonText>
               </HostGameButton>
               <HostGameButton onClick={() => setShowHostOptions(false)}>
                 <ButtonText>Back</ButtonText>

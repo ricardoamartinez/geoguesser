@@ -11,7 +11,7 @@ function CountdownScreen({ players, onCountdownComplete }) {
   const [countdownText, setCountdownText] = useState('');
 
   useEffect(() => {
-    let count = 5;
+    let count = 1;
     const countdownInterval = setInterval(() => {
       if (count > 0) {
         setCountdownText(count.toString());
