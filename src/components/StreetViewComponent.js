@@ -1,6 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
-import styled from 'styled-components';
+import styled, { keyframes } from 'styled-components';
 import { motion } from 'framer-motion';
+
+const glowAnimation = keyframes`
+  0% { text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 15px #fff, 0 0 20px #ff00de, 0 0 35px #ff00de, 0 0 40px #ff00de, 0 0 50px #ff00de, 0 0 75px #ff00de; }
+  100% { text-shadow: 0 0 2.5px #fff, 0 0 5px #fff, 0 0 7.5px #fff, 0 0 10px #ff00de, 0 0 17.5px #ff00de, 0 0 20px #ff00de, 0 0 25px #ff00de, 0 0 37.5px #ff00de; }
+`;
 
 const SubmitButton = styled(motion.button)`
   position: absolute;
@@ -43,6 +48,17 @@ const StreetViewComponent = ({ lat, lng, heading, pitch, allowMovement, profile,
   }, []);
 
   useEffect(() => {
+    console.log('StreetViewComponent mounted');
+    return () => {
+      console.log('StreetViewComponent unmounted');
+    };
+  }, []);
+
+  useEffect(() => {
+    console.log('Maps loaded:', mapsLoaded);
+  }, [mapsLoaded]);
+
+  useEffect(() => {
     if (mapsLoaded) {
       initializeStreetView();
     }
@@ -53,6 +69,10 @@ const StreetViewComponent = ({ lat, lng, heading, pitch, allowMovement, profile,
   }, [profile]);
 
   const initializeStreetView = () => {
+    if (!window.google || !window.google.maps) {
+      console.error('Google Maps API not loaded');
+      return;
+    }
     console.log('Initializing Street View');
     const streetViewService = new window.google.maps.StreetViewService();
 
@@ -103,21 +123,43 @@ const StreetViewComponent = ({ lat, lng, heading, pitch, allowMovement, profile,
       if (markerRef.current) {
         markerRef.current.setMap(null);
       }
-      console.log('Creating new marker with profile:', profile);
+      const avatarContent = profile && profile.avatar ? profile.avatar : '📍';
+
+      const pinSVG = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="80" height="100" viewBox="-20 -20 80 100">
+          <defs>
+            <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+              <feMerge>
+                <feMergeNode in="coloredBlur"/>
+                <feMergeNode in="SourceGraphic"/>
+              </feMerge>
+            </filter>
+          </defs>
+          <path class="pin" d="M20 0 C8.954 0 0 8.954 0 20 C0 31.046 20 60 20 60 C20 60 40 31.046 40 20 C40 8.954 31.046 0 20 0 Z" fill="#ff00de" filter="url(#glow)"/>
+          <circle cx="20" cy="18" r="14" fill="white"/>
+          <text x="20" y="24" font-size="20" text-anchor="middle" dy=".35em" fill="black">${avatarContent}</text>
+        </svg>
+      `;
+
+      const pinUrl = 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(pinSVG);
+
       const newMarker = new window.google.maps.Marker({
         position: e.latLng,
         map: map,
-        icon: profile && profile.avatar
-          ? {
-              url: `data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40"><text x="50%" y="50%" font-size="30" text-anchor="middle" dy=".35em">${encodeURIComponent(profile.avatar)}</text></svg>`,
-              scaledSize: new window.google.maps.Size(40, 40),
-            }
-          : null, // Use default marker if profile or avatar is not available
+        icon: {
+          url: pinUrl,
+          scaledSize: new window.google.maps.Size(80, 100),
+          anchor: new window.google.maps.Point(40, 80),
+          origin: new window.google.maps.Point(0, 0),
+        },
       });
+
       markerRef.current = newMarker;
       setMarkerPosition(e.latLng);
     });
 
+    // Original marker for the street view location
     new window.google.maps.Marker({
       position: { lat, lng },
       map: map,
@@ -205,11 +247,9 @@ const StreetViewComponent = ({ lat, lng, heading, pitch, allowMovement, profile,
           position: 'absolute',
           bottom: '20px',
           right: '20px',
-          width: '500px',  // Increased from 300px
-          height: '500px', // Increased from 300px
-          border: '2px solid white',
-          borderRadius: '5px',
-          zIndex: 1000, // Add this line
+          width: '500px',
+          height: '500px',
+          zIndex: 1000,
         }}
       />
       <SubmitButton
