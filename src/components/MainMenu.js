@@ -1,5 +1,5 @@
 // src/components/MainMenu.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import ProfileCreator from './ProfileCreator';
@@ -275,21 +275,21 @@ const MainMenu = ({ onStartGame }) => {
     };
   }, []);
 
-  const handlePlayNow = () => {
+  const handlePlayNow = useCallback(() => {
     setShowProfileCreator(true);
-  };
+  }, []);
 
-  const handleProfileComplete = (newProfile) => {
+  const handleProfileComplete = useCallback((newProfile) => {
     console.log('New profile set:', newProfile); // Add this line
     setProfile(newProfile);
     setShowProfileCreator(false);
-  };
+  }, []);
 
-  const handleJoinGame = () => {
+  const handleJoinGame = useCallback(() => {
     setShowGameCodeInput(true);
-  };
+  }, []);
 
-  const handleCopyGameCode = () => {
+  const handleCopyGameCode = useCallback(() => {
     navigator.clipboard.writeText(gameCode);
     toast.success('Game code copied to clipboard!', {
       position: "top-right",
@@ -299,9 +299,9 @@ const MainMenu = ({ onStartGame }) => {
       pauseOnHover: true,
       draggable: true,
     });
-  };
+  }, [gameCode]);
 
-  const handleGameCodeSubmit = async (e) => {
+  const handleGameCodeSubmit = useCallback(async (e) => {
     e.preventDefault();
     try {
       const { gameSession } = await joinGame(gameCode, profile);
@@ -319,25 +319,25 @@ const MainMenu = ({ onStartGame }) => {
         draggable: true,
       });
     }
-  };
+  }, [gameCode, profile]);
 
-  const handleHostGame = () => {
+  const handleHostGame = useCallback(() => {
     setShowHostOptions(true);
-  };
+  }, []);
 
-  const handleGameCodeChange = (e) => {
+  const handleGameCodeChange = useCallback((e) => {
     setGameCode(e.target.value);
-  };
+  }, []);
 
-  const handleOptionChange = (e) => {
+  const handleOptionChange = useCallback((e) => {
     const { name, value, type, checked } = e.target;
     setGameOptions(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }));
-  };
+  }, []);
 
-  const handleStartGame = () => {
+  const handleStartGame = useCallback(() => {
     if (gameSession) {
       startGame(gameSession.id, gameOptions);
       // TODO: Navigate to game screen or update UI as needed
@@ -345,15 +345,15 @@ const MainMenu = ({ onStartGame }) => {
       console.error('No active game session');
       // TODO: Show error message to user
     }
-  };
+  }, [gameSession, gameOptions]);
 
-  const handleLobbyStartGame = () => {
+  const handleLobbyStartGame = useCallback(() => {
     if (gameSession) {
       startGame(gameSession.id, gameOptions);
     }
-  };
+  }, [gameSession, gameOptions]);
 
-  const handleCreateGame = async () => {
+  const handleCreateGame = useCallback(async () => {
     try {
       console.log('Creating game with profile:', profile);
       const result = await createGame(profile);
@@ -367,211 +367,233 @@ const MainMenu = ({ onStartGame }) => {
       console.error('Failed to create game:', error);
       // TODO: Show error message to user
     }
-  };
+  }, [profile]);
 
-  if (showRoom) {
-    return <Room players={gameSession.players} roomCode={gameSession.id} />;
-  }
+  const renderState = useMemo(() => {
+    if (showRoom) {
+      return <Room players={gameSession.players} roomCode={gameSession.id} />;
+    }
 
-  if (gameStarted) {
-    return <GameScreen players={gameSession.players} gameOptions={gameOptions} />;
-  }
+    if (gameStarted) {
+      return <GameScreen players={gameSession.players} gameOptions={gameOptions} />;
+    }
 
-  console.log('Render state:', { 
-    showProfileCreator, 
-    profile, 
-    showGameCodeInput, 
-    showHostOptions, 
-    showLobby 
-  });
+    console.log('Render state:', { 
+      showProfileCreator, 
+      profile, 
+      showGameCodeInput, 
+      showHostOptions, 
+      showLobby 
+    });
 
-  return (
-    <>
-      <CenteredContainer>
-        <AnimatePresence mode="wait">
-          {!showProfileCreator && !profile && (
-            <MenuContent
-              key="menu"
-              variants={fadeVariants}
-              initial="hidden"
-              animate="visible"
-              exit="exit"
-            >
-              <Title
-                initial={{ opacity: 0, y: -50 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 1 }}
+    return (
+      <>
+        <CenteredContainer>
+          <AnimatePresence mode="wait">
+            {!showProfileCreator && !profile && (
+              <MenuContent
+                key="menu"
+                variants={fadeVariants}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
               >
-                Geo<span style={{ color: '#ff00de' }}>Guesser</span>
-              </Title>
-              <PlayButton
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={handlePlayNow}
+                <Title
+                  initial={{ opacity: 0, y: -50 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 1 }}
+                >
+                  Geo<span style={{ color: '#ff00de' }}>Guesser</span>
+                </Title>
+                <PlayButton
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handlePlayNow}
+                >
+                  <ButtonText>Play Now</ButtonText>
+                </PlayButton>
+              </MenuContent>
+            )}
+            {profile && !showGameCodeInput && !showHostOptions && !showLobby && (
+              <MenuContent
+                key="options"
+                variants={fadeVariants}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
               >
-                <ButtonText>Play Now</ButtonText>
-              </PlayButton>
-            </MenuContent>
-          )}
-          {profile && !showGameCodeInput && !showHostOptions && !showLobby && (
-            <MenuContent
-              key="options"
-              variants={fadeVariants}
-              initial="hidden"
-              animate="visible"
-              exit="exit"
-            >
-              <MenuButton
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={handleJoinGame}
+                <MenuButton
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handleJoinGame}
+                >
+                  <ButtonText>Join Game</ButtonText>
+                </MenuButton>
+                <MenuButton
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handleHostGame}
+                >
+                  <ButtonText>Host Game</ButtonText>
+                </MenuButton>
+              </MenuContent>
+            )}
+            {showGameCodeInput && (
+              <GameCodeForm
+                key="gameCodeForm"
+                variants={fadeVariants}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
               >
-                <ButtonText>Join Game</ButtonText>
-              </MenuButton>
-              <MenuButton
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={handleHostGame}
+                <GameCodeInput
+                  type="text"
+                  value={gameCode}
+                  onChange={handleGameCodeChange}
+                  placeholder="Enter game code"
+                  autoFocus
+                />
+                <SubmitButton type="submit">
+                  <ButtonText>Join</ButtonText>
+                </SubmitButton>
+                <SubmitButton type="button" onClick={() => setShowGameCodeInput(false)}>
+                  <ButtonText>Back</ButtonText>
+                </SubmitButton>
+              </GameCodeForm>
+            )}
+            {showHostOptions && (
+              <HostGameModal
+                key="hostOptions"
+                variants={fadeVariants}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
               >
-                <ButtonText>Host Game</ButtonText>
-              </MenuButton>
-            </MenuContent>
-          )}
-          {showGameCodeInput && (
-            <GameCodeForm
-              key="gameCodeForm"
-              variants={fadeVariants}
-              initial="hidden"
-              animate="visible"
-              exit="exit"
-            >
-              <GameCodeInput
-                type="text"
-                value={gameCode}
-                onChange={handleGameCodeChange}
-                placeholder="Enter game code"
-                autoFocus
-              />
-              <SubmitButton type="submit">
-                <ButtonText>Join</ButtonText>
-              </SubmitButton>
-              <SubmitButton type="button" onClick={() => setShowGameCodeInput(false)}>
-                <ButtonText>Back</ButtonText>
-              </SubmitButton>
-            </GameCodeForm>
-          )}
-          {showHostOptions && (
-            <HostGameModal
-              key="hostOptions"
-              variants={fadeVariants}
-              initial="hidden"
-              animate="visible"
-              exit="exit"
-            >
-              <Title style={{ fontSize: '2rem', marginBottom: '1rem' }}>Host Game</Title>
-              <OptionGroup>
-                <OptionLabel>Location Type</OptionLabel>
-                <Select name="locationType" value={gameOptions.locationType} onChange={handleOptionChange}>
-                  <option value="any">Any</option>
-                  <option value="capitals">Capitals Only</option>
-                  <option value="landmarks">Famous Landmarks</option>
-                </Select>
-              </OptionGroup>
-              <OptionGroup>
-                <OptionLabel>Region</OptionLabel>
-                <Select name="region" value={gameOptions.region} onChange={handleOptionChange}>
-                  <option value="world">Worldwide</option>
-                  <option value="europe">Europe</option>
-                  <option value="asia">Asia</option>
-                  <option value="americas">Americas</option>
-                  <option value="africa">Africa</option>
-                  <option value="oceania">Oceania</option>
-                </Select>
-              </OptionGroup>
-              <OptionGroup>
-                <OptionLabel>Time Limit (seconds)</OptionLabel>
-                <Select name="timeLimit" value={gameOptions.timeLimit} onChange={handleOptionChange}>
-                  <option value="30">30</option>
-                  <option value="60">60</option>
-                  <option value="120">120</option>
-                  <option value="300">300</option>
-                </Select>
-              </OptionGroup>
-              <OptionGroup>
-                <OptionLabel>Number of Rounds</OptionLabel>
-                <Select name="roundCount" value={gameOptions.roundCount} onChange={handleOptionChange}>
-                  <option value="3">3</option>
-                  <option value="5">5</option>
-                  <option value="10">10</option>
-                </Select>
-              </OptionGroup>
-              <OptionGroup>
-                <OptionLabel>Filter</OptionLabel>
-                <Select name="filter" value={gameOptions.filter} onChange={handleOptionChange}>
-                  <option value="none">None</option>
-                  <option value="grayscale(100%)">Grayscale</option>
-                  <option value="sepia(100%)">Sepia</option>
-                  <option value="invert(100%)">Inverted</option>
-                  <option value="hue-rotate(180deg)">Hue Rotate</option>
-                  <option value="blur(5px)">Blur</option>
-                </Select>
-              </OptionGroup>
-              <OptionGroup>
-                <CheckboxLabel>
-                  <Checkbox
-                    type="checkbox"
-                    name="moveAllowed"
-                    checked={gameOptions.moveAllowed}
-                    onChange={handleOptionChange}
-                  />
-                  Allow Movement
-                </CheckboxLabel>
-              </OptionGroup>
-              <HostGameButton onClick={handleCreateGame}>
-                <ButtonText>Create Game</ButtonText>
-              </HostGameButton>
-              <HostGameButton onClick={() => setShowHostOptions(false)}>
-                <ButtonText>Back</ButtonText>
-              </HostGameButton>
-            </HostGameModal>
-          )}
-          {showLobby && gameSession && (
-            <HostGameModal
-              key="lobby"
-              variants={fadeVariants}
-              initial="hidden"
-              animate="visible"
-              exit="exit"
-            >
-              <Title style={{ fontSize: '2rem', marginBottom: '1rem' }}>Game Lobby</Title>
-              {gameCode && (
-                <GameCode>
-                  Game Code: <span>{gameCode}</span>
-                  <CopyButton onClick={handleCopyGameCode}>
-                    Copy
-                  </CopyButton>
-                </GameCode>
-              )}
-              <GameLobby
-                gameSession={gameSession}
-                isHost={gameSession.host === socket.id}
-                onStartGame={handleLobbyStartGame}
-                onBack={() => {
-                  setShowLobby(false);
-                  setGameSession(null);
-                  setGameCode('');
-                }}
-                profile={profile}
-              />
-            </HostGameModal>
-          )}
-        </AnimatePresence>
-      </CenteredContainer>
-      {showProfileCreator && <ProfileCreator onComplete={handleProfileComplete} />}
-      {profile && !showLobby && <ProfileDisplay profile={profile} />}
-      <ToastContainer />
-    </>
-  );
+                <Title style={{ fontSize: '2rem', marginBottom: '1rem' }}>Host Game</Title>
+                <OptionGroup>
+                  <OptionLabel>Location Type</OptionLabel>
+                  <Select name="locationType" value={gameOptions.locationType} onChange={handleOptionChange}>
+                    <option value="any">Any</option>
+                    <option value="capitals">Capitals Only</option>
+                    <option value="landmarks">Famous Landmarks</option>
+                  </Select>
+                </OptionGroup>
+                <OptionGroup>
+                  <OptionLabel>Region</OptionLabel>
+                  <Select name="region" value={gameOptions.region} onChange={handleOptionChange}>
+                    <option value="world">Worldwide</option>
+                    <option value="europe">Europe</option>
+                    <option value="asia">Asia</option>
+                    <option value="americas">Americas</option>
+                    <option value="africa">Africa</option>
+                    <option value="oceania">Oceania</option>
+                  </Select>
+                </OptionGroup>
+                <OptionGroup>
+                  <OptionLabel>Time Limit (seconds)</OptionLabel>
+                  <Select name="timeLimit" value={gameOptions.timeLimit} onChange={handleOptionChange}>
+                    <option value="30">30</option>
+                    <option value="60">60</option>
+                    <option value="120">120</option>
+                    <option value="300">300</option>
+                  </Select>
+                </OptionGroup>
+                <OptionGroup>
+                  <OptionLabel>Number of Rounds</OptionLabel>
+                  <Select name="roundCount" value={gameOptions.roundCount} onChange={handleOptionChange}>
+                    <option value="3">3</option>
+                    <option value="5">5</option>
+                    <option value="10">10</option>
+                  </Select>
+                </OptionGroup>
+                <OptionGroup>
+                  <OptionLabel>Filter</OptionLabel>
+                  <Select name="filter" value={gameOptions.filter} onChange={handleOptionChange}>
+                    <option value="none">None</option>
+                    <option value="grayscale(100%)">Grayscale</option>
+                    <option value="sepia(100%)">Sepia</option>
+                    <option value="invert(100%)">Inverted</option>
+                    <option value="hue-rotate(180deg)">Hue Rotate</option>
+                    <option value="blur(5px)">Blur</option>
+                  </Select>
+                </OptionGroup>
+                <OptionGroup>
+                  <CheckboxLabel>
+                    <Checkbox
+                      type="checkbox"
+                      name="moveAllowed"
+                      checked={gameOptions.moveAllowed}
+                      onChange={handleOptionChange}
+                    />
+                    Allow Movement
+                  </CheckboxLabel>
+                </OptionGroup>
+                <HostGameButton onClick={handleCreateGame}>
+                  <ButtonText>Create Game</ButtonText>
+                </HostGameButton>
+                <HostGameButton onClick={() => setShowHostOptions(false)}>
+                  <ButtonText>Back</ButtonText>
+                </HostGameButton>
+              </HostGameModal>
+            )}
+            {showLobby && gameSession && (
+              <HostGameModal
+                key="lobby"
+                variants={fadeVariants}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+              >
+                <Title style={{ fontSize: '2rem', marginBottom: '1rem' }}>Game Lobby</Title>
+                {gameCode && (
+                  <GameCode>
+                    Game Code: <span>{gameCode}</span>
+                    <CopyButton onClick={handleCopyGameCode}>
+                      Copy
+                    </CopyButton>
+                  </GameCode>
+                )}
+                <GameLobby
+                  gameSession={gameSession}
+                  isHost={gameSession.host === socket.id}
+                  onStartGame={handleLobbyStartGame}
+                  onBack={() => {
+                    setShowLobby(false);
+                    setGameSession(null);
+                    setGameCode('');
+                  }}
+                  profile={profile}
+                />
+              </HostGameModal>
+            )}
+          </AnimatePresence>
+        </CenteredContainer>
+        {showProfileCreator && <ProfileCreator onComplete={handleProfileComplete} />}
+        {profile && !showLobby && <ProfileDisplay profile={profile} />}
+        <ToastContainer />
+      </>
+    );
+  }, [
+    showProfileCreator,
+    profile,
+    showGameCodeInput,
+    showHostOptions,
+    showLobby,
+    gameCode,
+    handlePlayNow,
+    handleJoinGame,
+    handleHostGame,
+    handleGameCodeChange,
+    handleGameCodeSubmit,
+    handleCopyGameCode,
+    handleCreateGame,
+    gameSession,
+    gameOptions,
+    showRoom,
+    gameStarted
+  ]);
+
+  return renderState;
 };
 
 const GameCodeForm = styled(motion.form)`

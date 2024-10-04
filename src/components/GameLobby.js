@@ -84,7 +84,7 @@ function GameLobby({ gameSession, isHost, onStartGame, onBack, profile, isCounti
           onCountdownComplete={handleCountdownComplete} 
         />
       )}
-      <LobbyContainer showCountdown={showCountdownScreen}>
+      <LobbyContainer $showCountdown={showCountdownScreen}>
         <PlayerList>
           {gameSession.players.map((player, index) => (
             <PlayerItem key={index}>

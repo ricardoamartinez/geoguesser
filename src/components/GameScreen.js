@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import StreetViewComponent from './StreetViewComponent';
@@ -6,6 +6,8 @@ import StreetViewComponent from './StreetViewComponent';
 const GameScreen = ({ players, gameOptions = {} }) => {
   const [location, setLocation] = useState(null);
   const [isStreetViewReady, setIsStreetViewReady] = useState(false);
+  const [error, setError] = useState(null);
+  const initialLocationSet = useRef(false);
 
   const {
     filter = 'none',
@@ -14,47 +16,93 @@ const GameScreen = ({ players, gameOptions = {} }) => {
     locationType = 'any'
   } = gameOptions;
 
+  console.log('GameScreen: moveAllowed:', moveAllowed);
+
   const getRandomLocation = useCallback(() => {
     return new Promise((resolve, reject) => {
       const regionBounds = getRegionBounds(region);
-      const lat = Math.random() * (regionBounds.north - regionBounds.south) + regionBounds.south;
-      const lng = Math.random() * (regionBounds.east - regionBounds.west) + regionBounds.west;
+      const maxAttempts = 20; // Increase the number of attempts
+      let attempts = 0;
 
-      const streetViewService = new window.google.maps.StreetViewService();
-      streetViewService.getPanorama({
-        location: { lat, lng },
-        radius: 50000,
-        source: getStreetViewSource(locationType)
-      }, (data, status) => {
-        if (status === 'OK') {
-          resolve({
-            lat: data.location.latLng.lat(),
-            lng: data.location.latLng.lng()
-          });
-        } else {
-          reject(new Error('No suitable Street View found'));
-        }
-      });
+      const tryLocation = () => {
+        const lat = Math.random() * (regionBounds.north - regionBounds.south) + regionBounds.south;
+        const lng = Math.random() * (regionBounds.east - regionBounds.west) + regionBounds.west;
+
+        const streetViewService = new window.google.maps.StreetViewService();
+        streetViewService.getPanorama({
+          location: { lat, lng },
+          radius: 50000,
+          source: getStreetViewSource(locationType)
+        }, (data, status) => {
+          if (status === 'OK') {
+            resolve({
+              lat: data.location.latLng.lat(),
+              lng: data.location.latLng.lng()
+            });
+          } else {
+            attempts++;
+            if (attempts < maxAttempts) {
+              tryLocation();
+            } else {
+              reject(new Error(`Failed to find a suitable Street View location after ${maxAttempts} attempts`));
+            }
+          }
+        });
+      };
+
+      tryLocation();
     });
   }, [region, locationType]);
 
   const setNewLocation = useCallback(() => {
+    if (initialLocationSet.current) {
+      console.log('Location already set, skipping...');
+      return;
+    }
+
     setIsStreetViewReady(false);
+    setError(null);
     getRandomLocation()
       .then(newLocation => {
         console.log('GameScreen: Setting new location:', newLocation, 'with filter:', filter);
         setLocation(newLocation);
         setIsStreetViewReady(true);
+        initialLocationSet.current = true;
       })
       .catch(error => {
         console.error('Failed to get random location:', error);
-        setNewLocation(); // Retry
+        setError('Failed to find a suitable location. Please try again.');
+        setTimeout(() => {
+          initialLocationSet.current = false;
+          setNewLocation();
+        }, 2000);
       });
   }, [getRandomLocation, filter]);
 
   useEffect(() => {
-    setNewLocation();
+    if (!initialLocationSet.current) {
+      setNewLocation();
+    }
   }, [setNewLocation]);
+
+  const memoizedStreetView = useMemo(() => {
+    if (isStreetViewReady && location) {
+      return (
+        <StreetViewComponent 
+          lat={location.lat} 
+          lng={location.lng} 
+          heading={0}
+          pitch={0}
+          allowMovement={moveAllowed}
+        />
+      );
+    }
+    return null;
+  }, [isStreetViewReady, location, moveAllowed]);
+
+  if (error) {
+    return <ErrorMessage>{error}</ErrorMessage>;
+  }
 
   return (
     <GameScreenContainer>
@@ -65,19 +113,9 @@ const GameScreen = ({ players, gameOptions = {} }) => {
           <PlayerPoints>Points: {player.points || 0}</PlayerPoints>
         </PlayerCard>
       ))}
-      {isStreetViewReady && location ? (
-        <StreetViewContainer>
-          <StreetViewComponent 
-            lat={location.lat} 
-            lng={location.lng} 
-            heading={0}
-            pitch={0}
-            allowMovement={moveAllowed}
-          />
-        </StreetViewContainer>
-      ) : (
-        <div>Loading StreetView...</div>
-      )}
+      <StreetViewContainer>
+        {memoizedStreetView || <LoadingMessage>Loading StreetView...</LoadingMessage>}
+      </StreetViewContainer>
     </GameScreenContainer>
   );
 };
@@ -151,6 +189,19 @@ const StreetViewContainer = styled(motion.div)`
   width: 100%;
   height: 100%;
   z-index: 1000;
+`;
+
+const ErrorMessage = styled.div`
+  color: red;
+  font-size: 1.2rem;
+  text-align: center;
+  margin-top: 20px;
+`;
+
+const LoadingMessage = styled.div`
+  color: white;
+  font-size: 1.2rem;
+  text-align: center;
 `;
 
 export default GameScreen;
