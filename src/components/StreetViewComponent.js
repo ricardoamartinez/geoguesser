@@ -105,7 +105,38 @@ const PulseCircle = styled.circle`
   }
 `;
 
-const StreetViewComponent = ({ lat, lng, heading, pitch, allowMovement, profile, onGuess }) => {
+const TimerContainer = styled.div`
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: rgba(0, 0, 0, 0.7);
+  border: 2px solid #ff00de;
+  border-radius: 10px;
+  padding: 10px 20px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+`;
+
+const TimerText = styled.span`
+  color: #8a2be2;
+  text-shadow: 0 0 5px #8a2be2;
+`;
+
+const pulse = keyframes`
+  0% { box-shadow: 0 0 0 0 rgba(255, 0, 222, 0.7); }
+  70% { box-shadow: 0 0 0 10px rgba(255, 0, 222, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 0, 222, 0); }
+`;
+
+const PulsingTimerContainer = styled(TimerContainer)`
+  animation: ${pulse} 2s infinite;
+`;
+
+const StreetViewComponent = ({ lat, lng, heading, pitch, allowMovement, profile, onGuess, initialTime, onTimeUp }) => {
   const streetViewRef = useRef(null);
   const mapRef = useRef(null);
   const panoramaRef = useRef(null);
@@ -119,6 +150,26 @@ const StreetViewComponent = ({ lat, lng, heading, pitch, allowMovement, profile,
   const [mapZoom, setMapZoom] = useState(2);
   const [mapCenter, setMapCenter] = useState({ lat: 0, lng: 0 });
   const [compassRotation, setCompassRotation] = useState(0);
+  const [timeLeft, setTimeLeft] = useState(initialTime);
+
+  useEffect(() => {
+    if (timeLeft <= 0) {
+      onTimeUp();
+      return;
+    }
+
+    const timer = setInterval(() => {
+      setTimeLeft(prevTime => prevTime - 1);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [timeLeft, onTimeUp]);
+
+  const formatTime = (seconds) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
 
   useEffect(() => {
     if (!window.google) {
@@ -594,6 +645,9 @@ const StreetViewComponent = ({ lat, lng, heading, pitch, allowMovement, profile,
           <CompassText x="20" y="53" textAnchor="middle" filter="url(#glow)">W</CompassText>
         </CompassSVG>
       </CompassContainer>
+      <PulsingTimerContainer>
+        <TimerText>{formatTime(timeLeft)}</TimerText>
+      </PulsingTimerContainer>
       <AnimatePresence>
         {isMapVisible && (
           <MapContainer

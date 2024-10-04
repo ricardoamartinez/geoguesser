@@ -89,6 +89,13 @@ const GameScreen = ({ players, gameOptions = {}, profile }) => {
     console.log('GameScreen: Received profile:', profile);
   }, [profile]);
 
+  const [roundTime, setRoundTime] = useState(300); // 5 minutes in seconds
+
+  const handleTimeUp = () => {
+    console.log('Time is up!');
+    // Add your logic for when the time is up, e.g., end the round
+  };
+
   const memoizedStreetView = useMemo(() => {
     if (isStreetViewReady && location) {
       return (
@@ -98,15 +105,17 @@ const GameScreen = ({ players, gameOptions = {}, profile }) => {
           heading={0}
           pitch={0}
           allowMovement={moveAllowed}
-          profile={profile}  // Make sure this line exists
+          profile={profile}
           onGuess={(guessLocation) => {
             console.log('Guess made:', guessLocation);
           }}
+          initialTime={roundTime}
+          onTimeUp={handleTimeUp}
         />
       );
     }
     return null;
-  }, [isStreetViewReady, location, moveAllowed, profile]);  // Add profile to dependencies
+  }, [isStreetViewReady, location, moveAllowed, profile, roundTime]);
 
   if (error) {
     return <ErrorMessage>{error}</ErrorMessage>;
