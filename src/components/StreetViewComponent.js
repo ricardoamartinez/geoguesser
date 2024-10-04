@@ -232,16 +232,22 @@ const StreetViewComponent = ({ lat, lng, heading, pitch, allowMovement, profile,
       const newMarker = new window.google.maps.Marker({
         position: e.latLng,
         map: map,
+        draggable: true,
         icon: {
           url: pinUrl,
           scaledSize: new window.google.maps.Size(80, 120),
-          anchor: new window.google.maps.Point(40, 100),
+          anchor: new window.google.maps.Point(40, 80), // Changed this line
           origin: new window.google.maps.Point(0, 0),
         },
       });
 
       markerRef.current = newMarker;
       setMarkerPosition(e.latLng);
+
+      // Add dragend event listener to update marker position
+      newMarker.addListener('dragend', (event) => {
+        setMarkerPosition(event.latLng);
+      });
     });
 
     // Original marker for the street view location
