@@ -2,18 +2,21 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import StreetViewComponent from './StreetViewComponent';
+import gameRoundBgMusic from '../assets/audio/game-round-bg-music.mp3';
 
 const GameScreen = ({ players, gameOptions = {}, profile }) => {
   const [location, setLocation] = useState(null);
   const [isStreetViewReady, setIsStreetViewReady] = useState(false);
   const [error, setError] = useState(null);
   const initialLocationSet = useRef(false);
+  const audioRef = useRef(new Audio(gameRoundBgMusic));
 
   const {
     filter = 'none',
     moveAllowed = true,
     region = 'world',
-    locationType = 'any'
+    locationType = 'any',
+    roundTime = 60 // Default to 1 minute if not specified in gameOptions
   } = gameOptions;
 
   console.log('GameScreen: moveAllowed:', moveAllowed);
@@ -89,12 +92,26 @@ const GameScreen = ({ players, gameOptions = {}, profile }) => {
     console.log('GameScreen: Received profile:', profile);
   }, [profile]);
 
-  const [roundTime, setRoundTime] = useState(60); // 1 minute in seconds
-
   const handleTimeUp = () => {
     console.log('Time is up!');
     // Add your logic for when the time is up, e.g., end the round
+    audioRef.current.pause();
+    audioRef.current.currentTime = 0;
   };
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    audio.loop = true;
+
+    if (isStreetViewReady) {
+      audio.play().catch(error => console.error("Error playing audio:", error));
+    }
+
+    return () => {
+      audio.pause();
+      audio.currentTime = 0;
+    };
+  }, [isStreetViewReady]);
 
   const memoizedStreetView = useMemo(() => {
     if (isStreetViewReady && location) {
