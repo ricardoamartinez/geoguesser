@@ -24,7 +24,7 @@ const SubmitButton = styled(motion.button)`
 
 const MapToggleButton = styled(motion.button)`
   position: absolute;
-  bottom: 530px;
+  bottom: 20px;
   right: 20px;
   padding: 10px;
   background: linear-gradient(45deg, #8e2de2, #4a00e0);
@@ -49,8 +49,9 @@ const StreetViewComponent = ({ lat, lng, heading, pitch, allowMovement, profile,
   const [mapsLoaded, setMapsLoaded] = useState(false);
   const [markerPosition, setMarkerPosition] = useState(null);
   const markerRef = useRef(null);
-  const [isMapVisible, setIsMapVisible] = useState(true);
+  const [isMapVisible, setIsMapVisible] = useState(false);
   const [mapInstance, setMapInstance] = useState(null);
+  const [marker, setMarker] = useState(null);
 
   useEffect(() => {
     if (!window.google) {
@@ -221,8 +222,8 @@ const StreetViewComponent = ({ lat, lng, heading, pitch, allowMovement, profile,
     ];
 
     const map = new window.google.maps.Map(mapRef.current, {
-      center: { lat, lng },
-      zoom: 8,
+      center: { lat: 0, lng: 0 }, // Center of the world
+      zoom: 2, // Global view
       mapTypeId: 'roadmap',
       disableDefaultUI: true,
       styles: darkModeStyle,
@@ -230,55 +231,69 @@ const StreetViewComponent = ({ lat, lng, heading, pitch, allowMovement, profile,
 
     setMapInstance(map);
 
+    // Recreate marker if it exists
+    if (marker) {
+      createMarker(map, marker.position, marker.avatar);
+      map.setCenter(marker.position);
+      map.setZoom(8); // Zoom in if a marker exists
+    }
+
     map.addListener('click', (e) => {
+      const avatarContent = profile && profile.avatar ? profile.avatar : '📍';
       if (markerRef.current) {
         markerRef.current.setMap(null);
       }
-      const avatarContent = profile && profile.avatar ? profile.avatar : '📍';
-
-      const pinSVG = `
-        <svg xmlns="http://www.w3.org/2000/svg" width="80" height="120" viewBox="-20 -20 80 120">
-          <defs>
-            <style>
-              @keyframes smoothGlow {
-                0%, 100% { filter: drop-shadow(0 0 2px #ff00de) drop-shadow(0 0 4px #ff00de); }
-                50% { filter: drop-shadow(0 0 3px #ff00de) drop-shadow(0 0 6px #ff00de); }
-              }
-              .pin {
-                fill: #ff00de;
-                animation: smoothGlow 2s ease-in-out infinite;
-              }
-            </style>
-          </defs>
-          <path class="pin" d="M20 0 C8.954 0 0 8.954 0 20 C0 31.046 20 60 20 60 C20 60 40 31.046 40 20 C40 8.954 31.046 0 20 0 Z"/>
-          <circle cx="20" cy="18" r="16" fill="white"/>
-          <text x="20" y="18" font-size="24" text-anchor="middle" dominant-baseline="central" fill="black">${avatarContent}</text>
-        </svg>
-      `;
-
-      const pinUrl = 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(pinSVG);
-
-      const newMarker = new window.google.maps.Marker({
-        position: e.latLng,
-        map: map,
-        draggable: true,
-        icon: {
-          url: pinUrl,
-          scaledSize: new window.google.maps.Size(80, 120),
-          anchor: new window.google.maps.Point(40, 80),
-          origin: new window.google.maps.Point(0, 0),
-        },
-      });
-
-      markerRef.current = newMarker;
+      const newMarker = createMarker(map, e.latLng, avatarContent);
+      setMarker({ position: e.latLng, avatar: avatarContent });
       setMarkerPosition(e.latLng);
+      map.setCenter(e.latLng);
+      map.setZoom(8); // Zoom in when a marker is placed
+    });
+  };
 
-      newMarker.addListener('dragend', (event) => {
-        setMarkerPosition(event.latLng);
-      });
+  const createMarker = (map, position, avatarContent) => {
+    const pinSVG = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="80" height="120" viewBox="-20 -20 80 120">
+        <defs>
+          <style>
+            @keyframes smoothGlow {
+              0%, 100% { filter: drop-shadow(0 0 2px #ff00de) drop-shadow(0 0 4px #ff00de); }
+              50% { filter: drop-shadow(0 0 3px #ff00de) drop-shadow(0 0 6px #ff00de); }
+            }
+            .pin {
+              fill: #ff00de;
+              animation: smoothGlow 2s ease-in-out infinite;
+            }
+          </style>
+        </defs>
+        <path class="pin" d="M20 0 C8.954 0 0 8.954 0 20 C0 31.046 20 60 20 60 C20 60 40 31.046 40 20 C40 8.954 31.046 0 20 0 Z"/>
+        <circle cx="20" cy="18" r="16" fill="white"/>
+        <text x="20" y="18" font-size="24" text-anchor="middle" dominant-baseline="central" fill="black">${avatarContent}</text>
+      </svg>
+    `;
+
+    const pinUrl = 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(pinSVG);
+
+    const newMarker = new window.google.maps.Marker({
+      position: position,
+      map: map,
+      draggable: true,
+      icon: {
+        url: pinUrl,
+        scaledSize: new window.google.maps.Size(80, 120),
+        anchor: new window.google.maps.Point(40, 80),
+        origin: new window.google.maps.Point(0, 0),
+      },
     });
 
-    // Removed the original marker for the street view location
+    newMarker.addListener('dragend', (event) => {
+      const newPosition = event.latLng;
+      setMarker(prevMarker => ({ ...prevMarker, position: newPosition }));
+      setMarkerPosition(newPosition);
+    });
+
+    markerRef.current = newMarker;
+    return newMarker;
   };
 
   const updateStreetView = () => {
