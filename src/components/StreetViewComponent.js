@@ -7,25 +7,16 @@ const glowAnimation = keyframes`
   100% { text-shadow: 0 0 2.5px #fff, 0 0 5px #fff, 0 0 7.5px #fff, 0 0 10px #ff00de, 0 0 17.5px #ff00de, 0 0 20px #ff00de, 0 0 25px #ff00de, 0 0 37.5px #ff00de; }
 `;
 
-const SubmitButton = styled(motion.button)`
-  position: absolute;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 0.5rem 1rem;
-  background: linear-gradient(45deg, #8e2de2, #4a00e0);
-  border: none;
-  border-radius: 5px;
-  color: white;
-  cursor: pointer;
-  font-size: 1rem;
-  z-index: 1000;
-`;
-
-const MapToggleButton = styled(motion.button)`
+const ButtonContainer = styled.div`
   position: absolute;
   bottom: 20px;
   right: 20px;
+  display: flex;
+  gap: 10px;
+  z-index: 1001;
+`;
+
+const SubmitButton = styled(motion.button)`
   padding: 10px;
   background: linear-gradient(45deg, #8e2de2, #4a00e0);
   border: none;
@@ -33,12 +24,38 @@ const MapToggleButton = styled(motion.button)`
   color: white;
   cursor: pointer;
   font-size: 1.5rem;
-  z-index: 1001;
   width: 50px;
   height: 50px;
   display: flex;
   align-items: center;
   justify-content: center;
+`;
+
+const MapToggleButton = styled(motion.button)`
+  padding: 10px;
+  background: linear-gradient(45deg, #8e2de2, #4a00e0);
+  border: none;
+  border-radius: 50%;
+  color: white;
+  cursor: pointer;
+  font-size: 1.5rem;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
+const MapContainer = styled(motion.div)`
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  width: 500px;
+  height: 500px;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  z-index: 999;
 `;
 
 const StreetViewComponent = ({ lat, lng, heading, pitch, allowMovement, profile, onGuess }) => {
@@ -117,7 +134,10 @@ const StreetViewComponent = ({ lat, lng, heading, pitch, allowMovement, profile,
             showRoadLabels: false,
             fullscreenControl: false,
             zoomControl: false,
-            panControl: false,
+            panControl: true,
+            panControlOptions: {
+              position: window.google.maps.ControlPosition.TOP_LEFT
+            },
             linksControl: false,
             enableCloseButton: false,
             clickToGo: false,
@@ -368,6 +388,36 @@ const StreetViewComponent = ({ lat, lng, heading, pitch, allowMovement, profile,
     setIsMapVisible(!isMapVisible);
   };
 
+  const mapVariants = {
+    hidden: { 
+      width: 0, 
+      height: 0, 
+      opacity: 0,
+      transition: { 
+        type: "spring",
+        stiffness: 300,
+        damping: 30
+      }
+    },
+    visible: { 
+      width: 500, 
+      height: 500, 
+      opacity: 1,
+      transition: { 
+        type: "spring",
+        stiffness: 300,
+        damping: 30,
+        delayChildren: 0.2,
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const buttonVariants = {
+    map: { rotate: 0 },
+    pin: { rotate: 360 }
+  };
+
   if (error) {
     return <div>{error}</div>;
   }
@@ -377,40 +427,44 @@ const StreetViewComponent = ({ lat, lng, heading, pitch, allowMovement, profile,
       <div ref={streetViewRef} style={{ width: '100%', height: '100%' }} />
       <AnimatePresence>
         {isMapVisible && (
-          <motion.div
+          <MapContainer
             ref={mapRef}
-            initial={{ opacity: 0, scale: 0.8, y: 100 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.8, y: 100 }}
-            transition={{ type: "spring", stiffness: 300, damping: 25 }}
-            style={{
-              position: 'absolute',
-              bottom: '20px',
-              right: '20px',
-              width: '500px',
-              height: '500px',
-              zIndex: 1000,
-              borderRadius: '10px',
-              overflow: 'hidden',
-              boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-            }}
+            initial="hidden"
+            animate="visible"
+            exit="hidden"
+            variants={mapVariants}
           />
         )}
       </AnimatePresence>
-      <MapToggleButton
-        onClick={toggleMap}
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.9 }}
-      >
-        {isMapVisible ? '🗺️' : '📍'}
-      </MapToggleButton>
-      <SubmitButton
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        onClick={handleSubmit}
-      >
-        Submit Guess
-      </SubmitButton>
+      <ButtonContainer>
+        <AnimatePresence>
+          {isMapVisible && (
+            <motion.div
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 50 }}
+              transition={{ type: "spring", stiffness: 300, damping: 25 }}
+            >
+              <SubmitButton
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={handleSubmit}
+              >
+                ✅
+              </SubmitButton>
+            </motion.div>
+          )}
+        </AnimatePresence>
+        <MapToggleButton
+          onClick={toggleMap}
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          animate={isMapVisible ? "map" : "pin"}
+          variants={buttonVariants}
+        >
+          {isMapVisible ? '🗺️' : '📍'}
+        </MapToggleButton>
+      </ButtonContainer>
     </div>
   );
 };
