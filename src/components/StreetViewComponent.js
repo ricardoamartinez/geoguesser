@@ -2,26 +2,32 @@ import React, { useEffect, useRef, useState } from 'react';
 
 const StreetViewComponent = ({ lat, lng, heading, pitch, allowMovement }) => {
   const streetViewRef = useRef(null);
+  const mapRef = useRef(null);
   const panoramaRef = useRef(null);
   const [error, setError] = useState(null);
+  const [mapsLoaded, setMapsLoaded] = useState(false);
 
   useEffect(() => {
-    console.log('StreetViewComponent: Effect triggered with:', { lat, lng, heading, pitch, allowMovement });
-    if (window.google && window.google.maps) {
-      if (!panoramaRef.current) {
-        initializeStreetView();
-      } else {
-        updateStreetView();
-      }
+    if (!window.google) {
+      const script = document.createElement('script');
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.REACT_APP_GOOGLE_MAPS_API_KEY}&callback=initMap`;
+      script.async = true;
+      script.defer = true;
+      document.head.appendChild(script);
+
+      window.initMap = () => {
+        setMapsLoaded(true);
+      };
     } else {
-      const checkGoogleMaps = setInterval(() => {
-        if (window.google && window.google.maps) {
-          clearInterval(checkGoogleMaps);
-          initializeStreetView();
-        }
-      }, 100);
+      setMapsLoaded(true);
     }
-  }, [lat, lng, heading, pitch, allowMovement]);
+  }, []);
+
+  useEffect(() => {
+    if (mapsLoaded) {
+      initializeStreetView();
+    }
+  }, [mapsLoaded, lat, lng, heading, pitch, allowMovement]);
 
   const initializeStreetView = () => {
     console.log('Initializing Street View');
@@ -52,12 +58,27 @@ const StreetViewComponent = ({ lat, lng, heading, pitch, allowMovement }) => {
           console.log('Position changed:', panoramaRef.current.getPosition().toJSON());
         });
 
+        initializeMap();
         applyMovementRestrictions();
         setError(null);
       } else {
         console.error('Street View data not found for this location.');
         setError('No Street View available for this location');
       }
+    });
+  };
+
+  const initializeMap = () => {
+    const map = new window.google.maps.Map(mapRef.current, {
+      center: { lat, lng },
+      zoom: 8,
+      mapTypeId: 'roadmap',
+      disableDefaultUI: true,
+    });
+
+    new window.google.maps.Marker({
+      position: { lat, lng },
+      map: map,
     });
   };
 
@@ -127,7 +148,24 @@ const StreetViewComponent = ({ lat, lng, heading, pitch, allowMovement }) => {
     return <div>{error}</div>;
   }
 
-  return <div ref={streetViewRef} style={{ width: '100%', height: '100%' }} />;
+  return (
+    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+      <div ref={streetViewRef} style={{ width: '100%', height: '100%' }} />
+      <div 
+        ref={mapRef} 
+        style={{
+          position: 'absolute',
+          bottom: '20px',
+          right: '20px',
+          width: '500px',  // Increased from 300px
+          height: '500px', // Increased from 300px
+          border: '2px solid white',
+          borderRadius: '5px',
+          zIndex: 1000, // Add this line
+        }}
+      />
+    </div>
+  );
 };
 
 export default StreetViewComponent;
