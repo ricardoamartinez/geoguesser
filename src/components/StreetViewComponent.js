@@ -582,11 +582,12 @@ const StreetViewComponent = ({ lat, lng, heading, pitch, allowMovement, profile,
           <CompassCircle cx="50" cy="50" r="45" />
           <PulseCircle cx="50" cy="50" r="45" />
           <CompassNeedle 
-            d="M50,10 L60,50 L50,90 L40,50 Z" 
+            d="M50,10 L65,50 L50,90 L35,50 Z" 
             filter="url(#glow)"
             style={{ transform: `rotate(${compassRotation}deg)`, transformOrigin: 'center' }}
           />
           <circle cx="50" cy="50" r="5" fill="#ffffff" />
+          <path d="M50,15 L55,25 L50,20 L45,25 Z" fill="#ff00de" style={{ transform: `rotate(${compassRotation}deg)`, transformOrigin: 'center' }} />
           <CompassText x="50" y="25" textAnchor="middle" filter="url(#glow)">N</CompassText>
           <CompassText x="50" y="80" textAnchor="middle" filter="url(#glow)">S</CompassText>
           <CompassText x="80" y="53" textAnchor="middle" filter="url(#glow)">E</CompassText>
