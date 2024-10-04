@@ -3,7 +3,7 @@ import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import StreetViewComponent from './StreetViewComponent';
 
-const GameScreen = ({ players, gameOptions = {} }) => {
+const GameScreen = ({ players, gameOptions = {}, profile }) => {
   const [location, setLocation] = useState(null);
   const [isStreetViewReady, setIsStreetViewReady] = useState(false);
   const [error, setError] = useState(null);
@@ -85,6 +85,10 @@ const GameScreen = ({ players, gameOptions = {} }) => {
     }
   }, [setNewLocation]);
 
+  useEffect(() => {
+    console.log('GameScreen: Received profile:', profile);
+  }, [profile]);
+
   const memoizedStreetView = useMemo(() => {
     if (isStreetViewReady && location) {
       return (
@@ -94,11 +98,15 @@ const GameScreen = ({ players, gameOptions = {} }) => {
           heading={0}
           pitch={0}
           allowMovement={moveAllowed}
+          profile={profile}  // Make sure this line exists
+          onGuess={(guessLocation) => {
+            console.log('Guess made:', guessLocation);
+          }}
         />
       );
     }
     return null;
-  }, [isStreetViewReady, location, moveAllowed]);
+  }, [isStreetViewReady, location, moveAllowed, profile]);  // Add profile to dependencies
 
   if (error) {
     return <ErrorMessage>{error}</ErrorMessage>;

@@ -1,11 +1,30 @@
 import React, { useEffect, useRef, useState } from 'react';
+import styled from 'styled-components';
+import { motion } from 'framer-motion';
 
-const StreetViewComponent = ({ lat, lng, heading, pitch, allowMovement }) => {
+const SubmitButton = styled(motion.button)`
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.5rem 1rem;
+  background: linear-gradient(45deg, #8e2de2, #4a00e0);
+  border: none;
+  border-radius: 5px;
+  color: white;
+  cursor: pointer;
+  font-size: 1rem;
+  z-index: 1000;
+`;
+
+const StreetViewComponent = ({ lat, lng, heading, pitch, allowMovement, profile, onGuess }) => {
   const streetViewRef = useRef(null);
   const mapRef = useRef(null);
   const panoramaRef = useRef(null);
   const [error, setError] = useState(null);
   const [mapsLoaded, setMapsLoaded] = useState(false);
+  const [markerPosition, setMarkerPosition] = useState(null);
+  const markerRef = useRef(null);
 
   useEffect(() => {
     if (!window.google) {
@@ -28,6 +47,10 @@ const StreetViewComponent = ({ lat, lng, heading, pitch, allowMovement }) => {
       initializeStreetView();
     }
   }, [mapsLoaded, lat, lng, heading, pitch, allowMovement]);
+
+  useEffect(() => {
+    console.log('Profile received in StreetViewComponent:', profile);
+  }, [profile]);
 
   const initializeStreetView = () => {
     console.log('Initializing Street View');
@@ -74,6 +97,25 @@ const StreetViewComponent = ({ lat, lng, heading, pitch, allowMovement }) => {
       zoom: 8,
       mapTypeId: 'roadmap',
       disableDefaultUI: true,
+    });
+
+    map.addListener('click', (e) => {
+      if (markerRef.current) {
+        markerRef.current.setMap(null);
+      }
+      console.log('Creating new marker with profile:', profile);
+      const newMarker = new window.google.maps.Marker({
+        position: e.latLng,
+        map: map,
+        icon: profile && profile.avatar
+          ? {
+              url: `data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40"><text x="50%" y="50%" font-size="30" text-anchor="middle" dy=".35em">${encodeURIComponent(profile.avatar)}</text></svg>`,
+              scaledSize: new window.google.maps.Size(40, 40),
+            }
+          : null, // Use default marker if profile or avatar is not available
+      });
+      markerRef.current = newMarker;
+      setMarkerPosition(e.latLng);
     });
 
     new window.google.maps.Marker({
@@ -144,6 +186,12 @@ const StreetViewComponent = ({ lat, lng, heading, pitch, allowMovement }) => {
     console.log('Movement disabled');
   };
 
+  const handleSubmit = () => {
+    if (markerPosition) {
+      onGuess(markerPosition);
+    }
+  };
+
   if (error) {
     return <div>{error}</div>;
   }
@@ -164,6 +212,13 @@ const StreetViewComponent = ({ lat, lng, heading, pitch, allowMovement }) => {
           zIndex: 1000, // Add this line
         }}
       />
+      <SubmitButton
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        onClick={handleSubmit}
+      >
+        Submit Guess
+      </SubmitButton>
     </div>
   );
 };

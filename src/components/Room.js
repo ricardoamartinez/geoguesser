@@ -3,24 +3,32 @@ import styled from 'styled-components';
 import CountdownScreen from './CountdownScreen';
 import GameScreen from './GameScreen';
 
-const Room = ({ players, roomCode }) => {
-  const [gameState, setGameState] = useState('countdown');
+const Room = ({ initialGameState, players, gameOptions, profile }) => {
+  const [currentGameState, setCurrentGameState] = useState(initialGameState || 'countdown');
+
+  useEffect(() => {
+    console.log('Room: Received profile:', profile);
+  }, [profile]);
 
   const handleCountdownComplete = () => {
     console.log('Room: Countdown complete, setting gameState to playing');
-    setGameState('playing');
+    setCurrentGameState('playing');
   };
 
   return (
     <RoomContainer>
-      {gameState === 'countdown' && (
+      {currentGameState === 'countdown' && (
         <CountdownScreen 
           players={players} 
           onCountdownComplete={handleCountdownComplete} 
         />
       )}
-      {gameState === 'playing' && (
-        <GameScreen players={players} gameState={gameState} roomCode={roomCode} />
+      {currentGameState === 'playing' && (
+        <GameScreen 
+          players={players} 
+          gameOptions={gameOptions} 
+          profile={profile}  // Make sure this line exists
+        />
       )}
     </RoomContainer>
   );

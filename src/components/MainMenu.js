@@ -371,7 +371,7 @@ const MainMenu = ({ onStartGame }) => {
 
   const renderState = useMemo(() => {
     if (showRoom) {
-      return <Room players={gameSession.players} roomCode={gameSession.id} />;
+      return <Room players={gameSession.players} roomCode={gameSession.id} profile={profile} />;
     }
 
     if (gameStarted) {
