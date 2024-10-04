@@ -374,7 +374,7 @@ const MainMenu = ({ onStartGame }) => {
   }
 
   if (gameStarted) {
-    return <GameScreen players={gameSession.players} />;
+    return <GameScreen players={gameSession.players} gameOptions={gameOptions} />;
   }
 
   console.log('Render state:', { 

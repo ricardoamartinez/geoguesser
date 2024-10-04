@@ -1,60 +1,43 @@
 import React, { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
 
-const StreetViewComponent = ({ lat, lng, onNoStreetView, filter }) => {
+const StreetViewComponent = ({ lat, lng, onNoStreetView, filter, moveAllowed }) => {
   const streetViewRef = useRef(null);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     const loadStreetView = () => {
       if (window.google && window.google.maps) {
-        const streetViewService = new window.google.maps.StreetViewService();
-        streetViewService.getPanorama({ location: { lat, lng }, radius: 50 }, (data, status) => {
-          if (status === 'OK') {
-            const panorama = new window.google.maps.StreetViewPanorama(
-              streetViewRef.current,
-              {
-                position: data.location.latLng,
-                pov: { heading: 165, pitch: 0 },
-                zoom: 1,
-                motionTracking: false,
-                motionTrackingControl: false,
-                addressControl: false,
-                linksControl: false,
-                panControl: false,
-                enableCloseButton: false,
-                fullscreenControl: false,
-              }
-            );
-
-            // Apply filter
-            if (filter) {
-              const canvas = streetViewRef.current.querySelector('canvas');
-              if (canvas) {
-                canvas.style.filter = filter;
-              }
-            }
-          } else {
-            setError('No Street View available at this location.');
-            onNoStreetView();
+        const panorama = new window.google.maps.StreetViewPanorama(
+          streetViewRef.current,
+          {
+            position: { lat, lng },
+            pov: { heading: 165, pitch: 0 },
+            zoom: 1,
+            motionTracking: false,
+            motionTrackingControl: false,
+            addressControl: false,
+            linksControl: moveAllowed,
+            panControl: moveAllowed,
+            enableCloseButton: false,
+            fullscreenControl: false,
           }
-        });
+        );
+
+        // Apply filter
+        if (filter && filter !== 'none') {
+          const canvas = streetViewRef.current.querySelector('canvas');
+          if (canvas) {
+            canvas.style.filter = filter;
+          }
+        }
       } else {
         setError('Google Maps JavaScript API not loaded');
       }
     };
 
-    if (window.google && window.google.maps) {
-      loadStreetView();
-    } else {
-      const checkGoogleMaps = setInterval(() => {
-        if (window.google && window.google.maps) {
-          clearInterval(checkGoogleMaps);
-          loadStreetView();
-        }
-      }, 100);
-    }
-  }, [lat, lng, onNoStreetView, filter]);
+    loadStreetView();
+  }, [lat, lng, filter, moveAllowed]);
 
   if (error) {
     return <ErrorMessage>{error}</ErrorMessage>;

@@ -3,65 +3,57 @@ import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import StreetViewComponent from './StreetViewComponent';
 
-const guaranteedLocations = [
-  { lat: 40.7580, lng: -73.9855 },  // Times Square, New York
-  { lat: 48.8584, lng: 2.2945 },    // Eiffel Tower, Paris
-  { lat: 51.5007, lng: -0.1246 },   // Big Ben, London
-  { lat: 35.6762, lng: 139.6503 },  // Tokyo Tower, Tokyo
-  { lat: -33.8568, lng: 151.2153 }, // Sydney Opera House, Sydney
-  { lat: 41.8902, lng: 12.4922 },   // Colosseum, Rome
-  { lat: 37.8199, lng: -122.4783 }, // Golden Gate Bridge, San Francisco
-  { lat: -22.9519, lng: -43.2105 }, // Christ the Redeemer, Rio de Janeiro
-  { lat: 55.7520, lng: 37.6175 },   // Red Square, Moscow
-  { lat: 40.4319, lng: 116.5704 },  // Great Wall of China, Beijing
-];
-
-const filters = [
-  'none',
-  'grayscale(100%)',
-  'sepia(100%)',
-  'invert(100%)',
-  'hue-rotate(180deg)',
-  'blur(5px)',
-];
-
-const GameScreen = ({ players, gameState }) => {
+const GameScreen = ({ players, gameOptions = {} }) => {
   const [showStreetView, setShowStreetView] = useState(false);
   const [location, setLocation] = useState(null);
-  const [currentFilter, setCurrentFilter] = useState('none');
+
+  const {
+    filter = 'none',
+    moveAllowed = true,
+    region = 'world',
+    locationType = 'any'
+  } = gameOptions;
 
   const getRandomLocation = useCallback(() => {
-    const randomIndex = Math.floor(Math.random() * guaranteedLocations.length);
-    return guaranteedLocations[randomIndex];
-  }, []);
+    return new Promise((resolve, reject) => {
+      const regionBounds = getRegionBounds(region);
+      const lat = Math.random() * (regionBounds.north - regionBounds.south) + regionBounds.south;
+      const lng = Math.random() * (regionBounds.east - regionBounds.west) + regionBounds.west;
 
-  const getRandomFilter = useCallback(() => {
-    const randomIndex = Math.floor(Math.random() * filters.length);
-    return filters[randomIndex];
-  }, []);
+      const streetViewService = new window.google.maps.StreetViewService();
+      streetViewService.getPanorama({
+        location: { lat, lng },
+        radius: 50000,
+        source: getStreetViewSource(locationType)
+      }, (data, status) => {
+        if (status === 'OK') {
+          resolve({
+            lat: data.location.latLng.lat(),
+            lng: data.location.latLng.lng()
+          });
+        } else {
+          reject(new Error('No suitable Street View found'));
+        }
+      });
+    });
+  }, [region, locationType]);
 
   const setNewLocation = useCallback(() => {
-    const newLocation = getRandomLocation();
-    const newFilter = getRandomFilter();
-    console.log('GameScreen: Setting new location:', newLocation, 'with filter:', newFilter);
-    setLocation(newLocation);
-    setCurrentFilter(newFilter);
-    setShowStreetView(true);
-  }, [getRandomLocation, getRandomFilter]);
+    getRandomLocation()
+      .then(newLocation => {
+        console.log('GameScreen: Setting new location:', newLocation, 'with filter:', filter);
+        setLocation(newLocation);
+        setShowStreetView(true);
+      })
+      .catch(error => {
+        console.error('Failed to get random location:', error);
+        setNewLocation(); // Retry
+      });
+  }, [getRandomLocation, filter]);
 
   useEffect(() => {
-    console.log('GameScreen: useEffect triggered. gameState:', gameState, 'showStreetView:', showStreetView);
-    if (gameState === 'playing' && !showStreetView) {
-      setNewLocation();
-    }
-  }, [gameState, showStreetView, setNewLocation]);
-
-  console.log('GameScreen: Rendered. gameState:', gameState, 'showStreetView:', showStreetView, 'location:', location, 'filter:', currentFilter);
-
-  if (gameState !== 'playing') {
-    console.log('GameScreen: Not rendering, game not in playing state');
-    return null;
-  }
+    setNewLocation();
+  }, [setNewLocation]);
 
   return (
     <GameScreenContainer>
@@ -78,7 +70,8 @@ const GameScreen = ({ players, gameState }) => {
             lat={location.lat} 
             lng={location.lng} 
             onNoStreetView={setNewLocation}
-            filter={currentFilter}
+            filter={filter}
+            moveAllowed={moveAllowed}
           />
         </StreetViewContainer>
       ) : (
@@ -86,6 +79,30 @@ const GameScreen = ({ players, gameState }) => {
       )}
     </GameScreenContainer>
   );
+};
+
+const getRegionBounds = (region) => {
+  // Define bounding boxes for each region
+  const bounds = {
+    world: { north: 85, south: -85, east: 180, west: -180 },
+    europe: { north: 71, south: 35, east: 40, west: -25 },
+    asia: { north: 53, south: -10, east: 180, west: 25 },
+    americas: { north: 83, south: -56, east: -34, west: -171 },
+    africa: { north: 37, south: -35, east: 51, west: -18 },
+    oceania: { north: 21, south: -47, east: 180, west: 110 }
+  };
+  return bounds[region] || bounds.world;
+};
+
+const getStreetViewSource = (locationType) => {
+  switch (locationType) {
+    case 'outdoor':
+      return window.google.maps.StreetViewSource.OUTDOOR;
+    case 'indoor':
+      return window.google.maps.StreetViewSource.INDOOR;
+    default:
+      return window.google.maps.StreetViewSource.DEFAULT;
+  }
 };
 
 const GameScreenContainer = styled.div`
