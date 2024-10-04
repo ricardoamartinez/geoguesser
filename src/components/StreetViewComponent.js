@@ -236,7 +236,7 @@ const StreetViewComponent = ({ lat, lng, heading, pitch, allowMovement, profile,
         icon: {
           url: pinUrl,
           scaledSize: new window.google.maps.Size(80, 120),
-          anchor: new window.google.maps.Point(40, 80), // Changed this line
+          anchor: new window.google.maps.Point(40, 80),
           origin: new window.google.maps.Point(0, 0),
         },
       });
@@ -250,11 +250,7 @@ const StreetViewComponent = ({ lat, lng, heading, pitch, allowMovement, profile,
       });
     });
 
-    // Original marker for the street view location
-    new window.google.maps.Marker({
-      position: { lat, lng },
-      map: map,
-    });
+    // Removed the original marker for the street view location
   };
 
   const updateStreetView = () => {
