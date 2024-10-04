@@ -58,6 +58,53 @@ const MapContainer = styled(motion.div)`
   z-index: 999;
 `;
 
+const CompassContainer = styled.div`
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  width: 80px;
+  height: 80px;
+  z-index: 1000;
+`;
+
+const CompassSVG = styled.svg`
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 0 5px rgba(128, 0, 128, 0.7));
+`;
+
+const CompassCircle = styled.circle`
+  fill: rgba(0, 0, 0, 0.5);
+  stroke: #8a2be2;
+  stroke-width: 2;
+`;
+
+const CompassNeedle = styled.path`
+  fill: url(#needleGradient);
+`;
+
+const CompassText = styled.text`
+  font-family: 'Orbitron', sans-serif;
+  font-size: 14px;
+  fill: #ffffff;
+  text-shadow: 0 0 3px #8a2be2;
+`;
+
+const PulseCircle = styled.circle`
+  fill: none;
+  stroke: #8a2be2;
+  stroke-width: 2;
+  opacity: 0;
+  transform-origin: center;
+  animation: pulse 4s cubic-bezier(0.19, 1, 0.22, 1) infinite;
+
+  @keyframes pulse {
+    0% { transform: scale(0.1); opacity: 0; }
+    50% { opacity: 0.3; }
+    100% { transform: scale(1.5); opacity: 0; }
+  }
+`;
+
 const StreetViewComponent = ({ lat, lng, heading, pitch, allowMovement, profile, onGuess }) => {
   const streetViewRef = useRef(null);
   const mapRef = useRef(null);
@@ -71,6 +118,7 @@ const StreetViewComponent = ({ lat, lng, heading, pitch, allowMovement, profile,
   const [marker, setMarker] = useState(null);
   const [mapZoom, setMapZoom] = useState(2);
   const [mapCenter, setMapCenter] = useState({ lat: 0, lng: 0 });
+  const [compassRotation, setCompassRotation] = useState(0);
 
   useEffect(() => {
     if (!window.google) {
@@ -151,15 +199,15 @@ const StreetViewComponent = ({ lat, lng, heading, pitch, allowMovement, profile,
             showRoadLabels: false,
             fullscreenControl: false,
             zoomControl: false,
-            panControl: true,
-            panControlOptions: {
-              position: window.google.maps.ControlPosition.TOP_LEFT
-            },
+            panControl: false,
             linksControl: false,
             enableCloseButton: false,
             clickToGo: false,
             scrollwheel: false,
             disableDefaultUI: true,
+            motionTracking: false,
+            motionTrackingControl: false,
+            streetViewControl: false,
           }
         );
 
@@ -167,7 +215,12 @@ const StreetViewComponent = ({ lat, lng, heading, pitch, allowMovement, profile,
           console.log('Position changed:', panoramaRef.current.getPosition().toJSON());
         });
 
-        // Remove unwanted elements
+        panoramaRef.current.addListener('pov_changed', () => {
+          const newHeading = panoramaRef.current.getPov().heading;
+          setCompassRotation(-newHeading);
+        });
+
+        // Remove unwanted elements and show compass
         removeUnwantedElements();
 
         initializeMap();
@@ -186,9 +239,11 @@ const StreetViewComponent = ({ lat, lng, heading, pitch, allowMovement, profile,
       'a[aria-label^="Report a problem"]',
       'a[aria-label^="Terms"]',
       'span[aria-label^="@"]',
-      '.gmnoprint',
+      '.gmnoprint:not(.gm-compass)',
       '.gm-style-cc',
-      'a[href^="https://maps.google.com/maps"]'
+      'a[href^="https://maps.google.com/maps"]',
+      '.gm-iv-address',
+      '.gm-iv-short-address',
     ];
 
     const removeElements = () => {
@@ -200,6 +255,15 @@ const StreetViewComponent = ({ lat, lng, heading, pitch, allowMovement, profile,
           }
         });
       });
+
+      // Ensure only the compass remains visible
+      const compass = document.querySelector('.gm-compass');
+      if (compass) {
+        compass.style.display = 'block';
+        compass.style.position = 'absolute';
+        compass.style.top = '10px';
+        compass.style.left = '10px';
+      }
     };
 
     // Run the removal function immediately and after a delay
@@ -499,6 +563,36 @@ const StreetViewComponent = ({ lat, lng, heading, pitch, allowMovement, profile,
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
       <div ref={streetViewRef} style={{ width: '100%', height: '100%' }} />
+      <CompassContainer>
+        <CompassSVG viewBox="0 0 100 100">
+          <defs>
+            <linearGradient id="needleGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#ff00de" />
+              <stop offset="50%" stopColor="#8a2be2" />
+              <stop offset="100%" stopColor="#4b0082" />
+            </linearGradient>
+            <filter id="glow">
+              <feGaussianBlur stdDeviation="1.5" result="coloredBlur"/>
+              <feMerge>
+                <feMergeNode in="coloredBlur"/>
+                <feMergeNode in="SourceGraphic"/>
+              </feMerge>
+            </filter>
+          </defs>
+          <CompassCircle cx="50" cy="50" r="45" />
+          <PulseCircle cx="50" cy="50" r="45" />
+          <CompassNeedle 
+            d="M50,10 L60,50 L50,90 L40,50 Z" 
+            filter="url(#glow)"
+            style={{ transform: `rotate(${compassRotation}deg)`, transformOrigin: 'center' }}
+          />
+          <circle cx="50" cy="50" r="5" fill="#ffffff" />
+          <CompassText x="50" y="25" textAnchor="middle" filter="url(#glow)">N</CompassText>
+          <CompassText x="50" y="80" textAnchor="middle" filter="url(#glow)">S</CompassText>
+          <CompassText x="80" y="53" textAnchor="middle" filter="url(#glow)">E</CompassText>
+          <CompassText x="20" y="53" textAnchor="middle" filter="url(#glow)">W</CompassText>
+        </CompassSVG>
+      </CompassContainer>
       <AnimatePresence>
         {isMapVisible && (
           <MapContainer
