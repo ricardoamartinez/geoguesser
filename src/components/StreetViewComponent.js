@@ -126,24 +126,20 @@ const StreetViewComponent = ({ lat, lng, heading, pitch, allowMovement, profile,
       const avatarContent = profile && profile.avatar ? profile.avatar : '📍';
 
       const pinSVG = `
-        <svg xmlns="http://www.w3.org/2000/svg" width="40" height="60" viewBox="0 0 40 60">
+        <svg xmlns="http://www.w3.org/2000/svg" width="80" height="120" viewBox="-20 -20 80 120">
           <defs>
-            <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-              <feGaussianBlur stdDeviation="0.5" result="coloredBlur"/>
-              <feMerge>
-                <feMergeNode in="coloredBlur"/>
-                <feMergeNode in="SourceGraphic"/>
-              </feMerge>
-            </filter>
             <style>
-              @keyframes glowAnimation {
-                0% { filter: url(#glow) drop-shadow(0 0 0.5px #fff) drop-shadow(0 0 1px #ff00de); }
-                100% { filter: url(#glow) drop-shadow(0 0 1px #fff) drop-shadow(0 0 2px #ff00de); }
+              @keyframes smoothGlow {
+                0%, 100% { filter: drop-shadow(0 0 2px #ff00de) drop-shadow(0 0 4px #ff00de); }
+                50% { filter: drop-shadow(0 0 3px #ff00de) drop-shadow(0 0 6px #ff00de); }
               }
-              .pin { animation: glowAnimation 1s ease-in-out infinite alternate; }
+              .pin {
+                fill: #ff00de;
+                animation: smoothGlow 2s ease-in-out infinite;
+              }
             </style>
           </defs>
-          <path class="pin" d="M20 0 C8.954 0 0 8.954 0 20 C0 31.046 20 60 20 60 C20 60 40 31.046 40 20 C40 8.954 31.046 0 20 0 Z" fill="#ff00de"/>
+          <path class="pin" d="M20 0 C8.954 0 0 8.954 0 20 C0 31.046 20 60 20 60 C20 60 40 31.046 40 20 C40 8.954 31.046 0 20 0 Z"/>
           <circle cx="20" cy="18" r="16" fill="white"/>
           <text x="20" y="18" font-size="24" text-anchor="middle" dominant-baseline="central" fill="black">${avatarContent}</text>
         </svg>
@@ -156,8 +152,8 @@ const StreetViewComponent = ({ lat, lng, heading, pitch, allowMovement, profile,
         map: map,
         icon: {
           url: pinUrl,
-          scaledSize: new window.google.maps.Size(40, 60),
-          anchor: new window.google.maps.Point(20, 60),
+          scaledSize: new window.google.maps.Size(80, 120),
+          anchor: new window.google.maps.Point(40, 100),
           origin: new window.google.maps.Point(0, 0),
         },
       });
