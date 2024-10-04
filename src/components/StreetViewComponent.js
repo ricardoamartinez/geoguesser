@@ -69,6 +69,8 @@ const StreetViewComponent = ({ lat, lng, heading, pitch, allowMovement, profile,
   const [isMapVisible, setIsMapVisible] = useState(false);
   const [mapInstance, setMapInstance] = useState(null);
   const [marker, setMarker] = useState(null);
+  const [mapZoom, setMapZoom] = useState(2);
+  const [mapCenter, setMapCenter] = useState({ lat: 0, lng: 0 });
 
   useEffect(() => {
     if (!window.google) {
@@ -242,8 +244,8 @@ const StreetViewComponent = ({ lat, lng, heading, pitch, allowMovement, profile,
     ];
 
     const map = new window.google.maps.Map(mapRef.current, {
-      center: { lat: 0, lng: 0 }, // Center of the world
-      zoom: 2, // Global view
+      center: mapCenter,
+      zoom: mapZoom,
       mapTypeId: 'roadmap',
       disableDefaultUI: true,
       styles: darkModeStyle,
@@ -254,8 +256,6 @@ const StreetViewComponent = ({ lat, lng, heading, pitch, allowMovement, profile,
     // Recreate marker if it exists
     if (marker) {
       createMarker(map, marker.position, marker.avatar);
-      map.setCenter(marker.position);
-      map.setZoom(8); // Zoom in if a marker exists
     }
 
     map.addListener('click', (e) => {
@@ -266,8 +266,16 @@ const StreetViewComponent = ({ lat, lng, heading, pitch, allowMovement, profile,
       const newMarker = createMarker(map, e.latLng, avatarContent);
       setMarker({ position: e.latLng, avatar: avatarContent });
       setMarkerPosition(e.latLng);
-      map.setCenter(e.latLng);
-      map.setZoom(8); // Zoom in when a marker is placed
+    });
+
+    // Add listeners to save zoom and center when they change
+    map.addListener('zoom_changed', () => {
+      setMapZoom(map.getZoom());
+    });
+
+    map.addListener('center_changed', () => {
+      const center = map.getCenter();
+      setMapCenter({ lat: center.lat(), lng: center.lng() });
     });
   };
 
@@ -385,6 +393,12 @@ const StreetViewComponent = ({ lat, lng, heading, pitch, allowMovement, profile,
   };
 
   const toggleMap = () => {
+    if (isMapVisible && mapInstance) {
+      // Save current zoom and center before closing the map
+      setMapZoom(mapInstance.getZoom());
+      const center = mapInstance.getCenter();
+      setMapCenter({ lat: center.lat(), lng: center.lng() });
+    }
     setIsMapVisible(!isMapVisible);
   };
 
