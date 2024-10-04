@@ -115,6 +115,21 @@ const StreetViewComponent = ({ lat, lng, heading, pitch, allowMovement, profile,
     }
   }, [mapsLoaded, isMapVisible]);
 
+  useEffect(() => {
+    // Add a style tag to hide unwanted elements
+    const style = document.createElement('style');
+    style.textContent = `
+      .gmnoprint, .gm-style-cc, .gm-style a[href^="https://maps.google.com/maps"] {
+        display: none !important;
+      }
+    `;
+    document.head.appendChild(style);
+
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
+
   const initializeStreetView = () => {
     if (!window.google || !window.google.maps) {
       console.error('Google Maps API not loaded');
@@ -144,12 +159,16 @@ const StreetViewComponent = ({ lat, lng, heading, pitch, allowMovement, profile,
             enableCloseButton: false,
             clickToGo: false,
             scrollwheel: false,
+            disableDefaultUI: true,
           }
         );
 
         panoramaRef.current.addListener('position_changed', () => {
           console.log('Position changed:', panoramaRef.current.getPosition().toJSON());
         });
+
+        // Remove unwanted elements
+        removeUnwantedElements();
 
         initializeMap();
         applyMovementRestrictions();
@@ -158,6 +177,47 @@ const StreetViewComponent = ({ lat, lng, heading, pitch, allowMovement, profile,
         console.error('Street View data not found for this location.');
         setError('No Street View available for this location');
       }
+    });
+  };
+
+  const removeUnwantedElements = () => {
+    const elementsToRemove = [
+      'div[aria-label="Keyboard shortcuts"]',
+      'a[aria-label^="Report a problem"]',
+      'a[aria-label^="Terms"]',
+      'span[aria-label^="@"]',
+      '.gmnoprint',
+      '.gm-style-cc',
+      'a[href^="https://maps.google.com/maps"]'
+    ];
+
+    const removeElements = () => {
+      elementsToRemove.forEach(selector => {
+        const elements = document.querySelectorAll(selector);
+        elements.forEach(element => {
+          if (element && element.parentNode) {
+            element.parentNode.removeChild(element);
+          }
+        });
+      });
+    };
+
+    // Run the removal function immediately and after a delay
+    removeElements();
+    setTimeout(removeElements, 1000);
+
+    // Set up a MutationObserver to remove elements if they're added dynamically
+    const observer = new MutationObserver(mutations => {
+      mutations.forEach(mutation => {
+        if (mutation.type === 'childList') {
+          removeElements();
+        }
+      });
+    });
+
+    observer.observe(document.body, { 
+      childList: true, 
+      subtree: true 
     });
   };
 
