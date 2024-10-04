@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import styled, { keyframes } from 'styled-components';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const glowAnimation = keyframes`
   0% { text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 15px #fff, 0 0 20px #ff00de, 0 0 35px #ff00de, 0 0 40px #ff00de, 0 0 50px #ff00de, 0 0 75px #ff00de; }
@@ -22,6 +22,25 @@ const SubmitButton = styled(motion.button)`
   z-index: 1000;
 `;
 
+const MapToggleButton = styled(motion.button)`
+  position: absolute;
+  bottom: 530px;
+  right: 20px;
+  padding: 10px;
+  background: linear-gradient(45deg, #8e2de2, #4a00e0);
+  border: none;
+  border-radius: 50%;
+  color: white;
+  cursor: pointer;
+  font-size: 1.5rem;
+  z-index: 1001;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
 const StreetViewComponent = ({ lat, lng, heading, pitch, allowMovement, profile, onGuess }) => {
   const streetViewRef = useRef(null);
   const mapRef = useRef(null);
@@ -30,6 +49,7 @@ const StreetViewComponent = ({ lat, lng, heading, pitch, allowMovement, profile,
   const [mapsLoaded, setMapsLoaded] = useState(false);
   const [markerPosition, setMarkerPosition] = useState(null);
   const markerRef = useRef(null);
+  const [isMapVisible, setIsMapVisible] = useState(true);
 
   useEffect(() => {
     if (!window.google) {
@@ -321,6 +341,10 @@ const StreetViewComponent = ({ lat, lng, heading, pitch, allowMovement, profile,
     }
   };
 
+  const toggleMap = () => {
+    setIsMapVisible(!isMapVisible);
+  };
+
   if (error) {
     return <div>{error}</div>;
   }
@@ -328,17 +352,35 @@ const StreetViewComponent = ({ lat, lng, heading, pitch, allowMovement, profile,
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
       <div ref={streetViewRef} style={{ width: '100%', height: '100%' }} />
-      <div 
-        ref={mapRef} 
-        style={{
-          position: 'absolute',
-          bottom: '20px',
-          right: '20px',
-          width: '500px',
-          height: '500px',
-          zIndex: 1000,
-        }}
-      />
+      <AnimatePresence>
+        {isMapVisible && (
+          <motion.div
+            ref={mapRef}
+            initial={{ opacity: 0, scale: 0.8, y: 100 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.8, y: 100 }}
+            transition={{ type: "spring", stiffness: 300, damping: 25 }}
+            style={{
+              position: 'absolute',
+              bottom: '20px',
+              right: '20px',
+              width: '500px',
+              height: '500px',
+              zIndex: 1000,
+              borderRadius: '10px',
+              overflow: 'hidden',
+              boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+            }}
+          />
+        )}
+      </AnimatePresence>
+      <MapToggleButton
+        onClick={toggleMap}
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.9 }}
+      >
+        {isMapVisible ? '🗺️' : '📍'}
+      </MapToggleButton>
       <SubmitButton
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
