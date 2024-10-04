@@ -1,62 +1,70 @@
-import React, { useEffect, useRef, useState } from 'react';
-import styled from 'styled-components';
+import React, { useEffect, useRef } from 'react';
+import { Loader } from '@googlemaps/js-api-loader';
 
-const StreetViewComponent = ({ lat, lng, onNoStreetView, filter, moveAllowed }) => {
+const StreetViewComponent = ({ lat, lng, heading, pitch, allowMovement }) => {
   const streetViewRef = useRef(null);
-  const [error, setError] = useState(null);
+  const panoramaRef = useRef(null);
 
   useEffect(() => {
-    const loadStreetView = () => {
-      if (window.google && window.google.maps) {
-        const panorama = new window.google.maps.StreetViewPanorama(
+    const loader = new Loader({
+      apiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY,
+      version: "weekly",
+    });
+
+    loader.load().then(() => {
+      if (!panoramaRef.current) {
+        panoramaRef.current = new window.google.maps.StreetViewPanorama(
           streetViewRef.current,
           {
             position: { lat, lng },
-            pov: { heading: 165, pitch: 0 },
+            pov: { heading, pitch },
             zoom: 1,
-            motionTracking: false,
-            motionTrackingControl: false,
             addressControl: false,
-            linksControl: moveAllowed,
-            panControl: moveAllowed,
-            enableCloseButton: false,
-            fullscreenControl: false,
+            showRoadLabels: false,
+            disableDefaultUI: true,
+            clickToGo: allowMovement,
+            scrollwheel: allowMovement,
+            panControl: allowMovement,
           }
         );
 
-        // Apply filter
-        if (filter && filter !== 'none') {
-          const canvas = streetViewRef.current.querySelector('canvas');
-          if (canvas) {
-            canvas.style.filter = filter;
+        // Prevent the view from changing when movement is allowed
+        panoramaRef.current.addListener('position_changed', () => {
+          if (!allowMovement) {
+            panoramaRef.current.setPosition({ lat, lng });
           }
-        }
+        });
+
+        panoramaRef.current.addListener('pov_changed', () => {
+          if (!allowMovement) {
+            panoramaRef.current.setPov({ heading, pitch });
+          }
+        });
       } else {
-        setError('Google Maps JavaScript API not loaded');
+        // Update existing panorama
+        panoramaRef.current.setPosition({ lat, lng });
+        panoramaRef.current.setPov({ heading, pitch });
+        panoramaRef.current.setOptions({
+          clickToGo: allowMovement,
+          scrollwheel: allowMovement,
+          panControl: allowMovement,
+        });
       }
-    };
 
-    loadStreetView();
-  }, [lat, lng, filter, moveAllowed]);
+      if (allowMovement) {
+        const streetViewService = new window.google.maps.StreetViewService();
+        streetViewService.getPanorama({ location: { lat, lng }, radius: 50 }, (data, status) => {
+          if (status === 'OK') {
+            console.log('Movement is available at this location');
+          } else {
+            console.log('No movement available at this location');
+          }
+        });
+      }
+    });
+  }, [lat, lng, heading, pitch, allowMovement]);
 
-  if (error) {
-    return <ErrorMessage>{error}</ErrorMessage>;
-  }
-
-  return <StreetViewContainer ref={streetViewRef} />;
+  return <div ref={streetViewRef} style={{ width: '100%', height: '100%' }} />;
 };
-
-const StreetViewContainer = styled.div`
-  width: 100%;
-  height: 100%;
-`;
-
-const ErrorMessage = styled.div`
-  color: white;
-  background-color: rgba(0, 0, 0, 0.7);
-  padding: 20px;
-  border-radius: 10px;
-  text-align: center;
-`;
 
 export default StreetViewComponent;

@@ -4,8 +4,8 @@ import { motion } from 'framer-motion';
 import StreetViewComponent from './StreetViewComponent';
 
 const GameScreen = ({ players, gameOptions = {} }) => {
-  const [showStreetView, setShowStreetView] = useState(false);
   const [location, setLocation] = useState(null);
+  const [isStreetViewReady, setIsStreetViewReady] = useState(false);
 
   const {
     filter = 'none',
@@ -39,11 +39,12 @@ const GameScreen = ({ players, gameOptions = {} }) => {
   }, [region, locationType]);
 
   const setNewLocation = useCallback(() => {
+    setIsStreetViewReady(false);
     getRandomLocation()
       .then(newLocation => {
         console.log('GameScreen: Setting new location:', newLocation, 'with filter:', filter);
         setLocation(newLocation);
-        setShowStreetView(true);
+        setIsStreetViewReady(true);
       })
       .catch(error => {
         console.error('Failed to get random location:', error);
@@ -64,14 +65,14 @@ const GameScreen = ({ players, gameOptions = {} }) => {
           <PlayerPoints>Points: {player.points || 0}</PlayerPoints>
         </PlayerCard>
       ))}
-      {showStreetView && location ? (
+      {isStreetViewReady && location ? (
         <StreetViewContainer>
           <StreetViewComponent 
             lat={location.lat} 
             lng={location.lng} 
-            onNoStreetView={setNewLocation}
-            filter={filter}
-            moveAllowed={moveAllowed}
+            heading={0}
+            pitch={0}
+            allowMovement={moveAllowed}
           />
         </StreetViewContainer>
       ) : (
