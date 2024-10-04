@@ -89,7 +89,7 @@ const GameScreen = ({ players, gameOptions = {}, profile }) => {
     console.log('GameScreen: Received profile:', profile);
   }, [profile]);
 
-  const [roundTime, setRoundTime] = useState(300); // 5 minutes in seconds
+  const [roundTime, setRoundTime] = useState(60); // 1 minute in seconds
 
   const handleTimeUp = () => {
     console.log('Time is up!');
