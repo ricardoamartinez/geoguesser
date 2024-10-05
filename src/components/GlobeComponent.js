@@ -40,7 +40,7 @@ const GlobeComponent = () => {
       globe.scene().add(ambientLight);
 
       // Main directional light (sun)
-      const sunLight = new THREE.DirectionalLight(0xffffff, 8); // Increased intensity
+      const sunLight = new THREE.DirectionalLight(0xffffff, 12); // Increased intensity
       sunLight.position.set(1, 0.5, 1).normalize();
       sunLight.castShadow = true;
       sunLight.shadow.mapSize.width = 4096; // Increased resolution
@@ -110,9 +110,9 @@ const GlobeComponent = () => {
       id: Math.random(),
       lat: (Math.random() - 0.5) * 180,
       lng: (Math.random() - 0.5) * 360,
-      alt: 0.5 + Math.random() * 0.5,
-      speed: 0.01 + Math.random() * 0.03,
-      size: 0.75 + Math.random() * 0.75 // Increased base size to 0.75 and max to 1.5
+      alt: 0.1 + Math.random() * 0.1, // Reduced altitude range
+      speed: 0.01 + Math.random() * 0.02, // Slightly reduced speed variance
+      size: 0.5 + Math.random() * 0.5 // Reduced size range
     }));
     setSatellites(newSatellites);
     console.log('Satellites created:', newSatellites);
@@ -298,27 +298,30 @@ const GlobeComponent = () => {
           float diff = max(dot(bumpNormal, lightDir), 0.0);
           
           // Increase contrast of diffuse lighting
-          diff = smoothstep(0.2, 0.8, diff);
+          diff = smoothstep(0.1, 0.9, diff);
           
           vec3 diffuse = diff * vec3(1.0);
 
           vec3 texColor = texture2D(globeTexture, vUv).rgb;
 
           // Reduce ambient light for darker nights
-          vec3 ambient = texColor * 0.1;
+          vec3 ambient = texColor * 0.05;
           
           // Increase intensity of lit areas
-          vec3 litColor = texColor * (diffuse * 1.2 + ambient);
+          vec3 litColor = texColor * (diffuse * 1.5 + ambient);
 
           // Make night areas darker and bluer
           float nightIntensity = 1.0 - diff;
-          vec3 nightColor = vec3(0.05, 0.05, 0.1) * nightIntensity;
+          vec3 nightColor = vec3(0.02, 0.02, 0.08) * nightIntensity;
 
           // Add a subtle blue atmosphere effect
-          vec3 atmosphere = vec3(0.1, 0.1, 0.3) * pow(1.0 - diff, 4.0);
+          vec3 atmosphere = vec3(0.1, 0.1, 0.3) * pow(1.0 - diff, 6.0);
 
           // Blend day and night colors
           vec3 finalColor = mix(nightColor, litColor, diff) + atmosphere;
+
+          // Enhance contrast
+          finalColor = pow(finalColor, vec3(1.2));
 
           gl_FragColor = vec4(finalColor, 1.0);
         }
