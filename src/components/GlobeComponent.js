@@ -2,12 +2,14 @@ import React, { useEffect, useRef, useState } from 'react';
 import Globe from 'react-globe.gl';
 import * as THREE from 'three';
 import { TextureLoader } from 'three';
+import { ShaderMaterial } from 'three';
 
 const GlobeComponent = () => {
   const globeEl = useRef();
   const moonRef = useRef();
   const [satellites, setSatellites] = useState([]);
   const sunLightRef = useRef();
+  const globeMaterialRef = useRef();
 
   useEffect(() => {
     if (globeEl.current) {
@@ -74,6 +76,15 @@ const GlobeComponent = () => {
       // const fillLight = new THREE.DirectionalLight(0xffffff, 0.1); // Reduced intensity
       // fillLight.position.set(-1, 0.5, -1);
       // globe.scene().add(fillLight);
+
+      // Create custom shader material for the globe
+      const globeMaterial = createGlobeMaterial();
+      globeMaterialRef.current = globeMaterial;
+
+      // Apply the custom material to the globe
+      if (globeMesh) {
+        globeMesh.material = globeMaterial;
+      }
 
       createSatellites();
       
@@ -183,12 +194,12 @@ const GlobeComponent = () => {
     
     const moonMaterial = new THREE.MeshPhongMaterial({
       map: moonTexture,
-      color: 0xffffff,
-      emissive: 0x222222,  // Slight base emissive color
-      specular: 0x222222,  // Slight specular highlight
-      shininess: 5,
+      color: 0x111111,  // Darkened the base color
+      emissive: 0x000000,  // Removed emissive color
+      specular: 0x111111,  // Reduced specular highlight
+      shininess: 2,  // Reduced shininess
       bumpMap: moonTexture,
-      bumpScale: 0.002,
+      bumpScale: 0.001,  // Reduced bump scale
     });
 
     const moon = new THREE.Mesh(moonGeometry, moonMaterial);
@@ -215,17 +226,12 @@ const GlobeComponent = () => {
       moonRef.current.lookAt(0, 0, 0);
       moonRef.current.rotateY(Math.PI);
 
-      // Update moon phase based on sun position
-      const moonToSun = new THREE.Vector3().subVectors(sunLightRef.current.position, moonRef.current.position).normalize();
-      const moonToEarth = new THREE.Vector3().subVectors(new THREE.Vector3(0, 0, 0), moonRef.current.position).normalize();
-      const phaseAngle = moonToSun.angleTo(moonToEarth);
-      const phase = (1 + Math.cos(phaseAngle)) / 2;
-      moonRef.current.material.emissive.setRGB(phase * 0.4, phase * 0.4, phase * 0.4);
+      // Removed the moon phase calculation and emissive color update
     }
   };
 
   const updateSunPosition = () => {
-    if (sunLightRef.current) {
+    if (sunLightRef.current && globeMaterialRef.current) {
       const time = Date.now() * 0.00003; // Even slower movement
       const radius = 400; // Increased radius for more dramatic shadows
       const x = Math.cos(time) * radius;
@@ -237,7 +243,87 @@ const GlobeComponent = () => {
 
       // Update shadow camera to follow sun
       sunLightRef.current.shadow.camera.updateProjectionMatrix();
+
+      // Update the sun position in the globe shader
+      globeMaterialRef.current.uniforms.sunPosition.value.set(x, y, z);
     }
+  };
+
+  const createGlobeMaterial = () => {
+    const globeTexture = new THREE.TextureLoader().load('//unpkg.com/three-globe/example/img/earth-blue-marble.jpg');
+    const bumpTexture = new THREE.TextureLoader().load('//unpkg.com/three-globe/example/img/earth-topology.png');
+
+    return new ShaderMaterial({
+      uniforms: {
+        globeTexture: { value: globeTexture },
+        bumpTexture: { value: bumpTexture },
+        sunPosition: { value: new THREE.Vector3(0, 0, 1) },
+        bumpScale: { value: 0.15 }, // Increased bump scale
+      },
+      vertexShader: `
+        varying vec2 vUv;
+        varying vec3 vNormal;
+        varying vec3 vPosition;
+
+        void main() {
+          vUv = uv;
+          vNormal = normalize(normalMatrix * normal);
+          vPosition = (modelViewMatrix * vec4(position, 1.0)).xyz;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform sampler2D globeTexture;
+        uniform sampler2D bumpTexture;
+        uniform vec3 sunPosition;
+        uniform float bumpScale;
+
+        varying vec2 vUv;
+        varying vec3 vNormal;
+        varying vec3 vPosition;
+
+        void main() {
+          vec3 lightDir = normalize(sunPosition - vPosition);
+          
+          // Apply bump mapping
+          vec3 bumpNormal = vNormal;
+          vec2 dSTdx = dFdx(vUv);
+          vec2 dSTdy = dFdy(vUv);
+          float bumpValue = texture2D(bumpTexture, vUv).r;
+          float dBx = texture2D(bumpTexture, vUv + dSTdx).r - bumpValue;
+          float dBy = texture2D(bumpTexture, vUv + dSTdy).r - bumpValue;
+          vec3 bumpVector = vec3(dBx, dBy, 0.0);
+          bumpNormal = normalize(bumpNormal - bumpScale * bumpVector);
+
+          float diff = max(dot(bumpNormal, lightDir), 0.0);
+          
+          // Increase contrast of diffuse lighting
+          diff = smoothstep(0.2, 0.8, diff);
+          
+          vec3 diffuse = diff * vec3(1.0);
+
+          vec3 texColor = texture2D(globeTexture, vUv).rgb;
+
+          // Reduce ambient light for darker nights
+          vec3 ambient = texColor * 0.1;
+          
+          // Increase intensity of lit areas
+          vec3 litColor = texColor * (diffuse * 1.2 + ambient);
+
+          // Make night areas darker and bluer
+          float nightIntensity = 1.0 - diff;
+          vec3 nightColor = vec3(0.05, 0.05, 0.1) * nightIntensity;
+
+          // Add a subtle blue atmosphere effect
+          vec3 atmosphere = vec3(0.1, 0.1, 0.3) * pow(1.0 - diff, 4.0);
+
+          // Blend day and night colors
+          vec3 finalColor = mix(nightColor, litColor, diff) + atmosphere;
+
+          gl_FragColor = vec4(finalColor, 1.0);
+        }
+      `,
+    });
   };
 
   return (
