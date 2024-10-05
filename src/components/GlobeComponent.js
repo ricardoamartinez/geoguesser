@@ -4,6 +4,7 @@ import * as THREE from 'three';
 
 const GlobeComponent = () => {
   const globeEl = useRef();
+  const moonRef = useRef();
   const [satellites, setSatellites] = useState([]);
 
   useEffect(() => {
@@ -26,7 +27,28 @@ const GlobeComponent = () => {
         controls.autoRotate = true;
       });
 
+      // Adjust globe lighting
+      const ambientLight = new THREE.AmbientLight(0x404040, 1);
+      globe.scene().add(ambientLight);
+
+      const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+      directionalLight.position.set(1, 1, 1);
+      globe.scene().add(directionalLight);
+
       createSatellites();
+      
+      // Only create the moon if it doesn't exist
+      if (!moonRef.current) {
+        createMoon(globe);
+      }
+
+      // Start the animation loop
+      const animate = () => {
+        requestAnimationFrame(animate);
+        updateMoonPosition();
+        globe.renderer().render(globe.scene(), globe.camera());
+      };
+      animate();
     }
   }, []);
 
@@ -90,6 +112,60 @@ const GlobeComponent = () => {
     satelliteGroup.add(antenna);
 
     return satelliteGroup;
+  };
+
+  const createMoon = (globe) => {
+    if (moonRef.current) return; // Prevent creating multiple moons
+
+    // Get the actual globe radius
+    const globeRadius = globe.getGlobeRadius();
+    const moonRadius = globeRadius / 4; // Moon radius is exactly 1/4 of the globe's
+
+    const moonGeometry = new THREE.SphereGeometry(moonRadius, 32, 32);
+    const moonTexture = new THREE.TextureLoader().load(
+      'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/moon_1024.jpg'
+    );
+    
+    // Adjust the material properties to make the moon darker
+    const moonMaterial = new THREE.MeshPhongMaterial({
+      map: moonTexture,
+      color: 0x888888, // Darker base color
+      emissive: 0x000000, // No self-illumination
+      specular: 0x000000, // No specular highlights
+      shininess: 0,
+      bumpMap: moonTexture,
+      bumpScale: 0.002,
+    });
+
+    const moon = new THREE.Mesh(moonGeometry, moonMaterial);
+
+    // Initial position (will be updated in updateMoonPosition)
+    moon.position.set(globeRadius * 6, 0, 0);
+    
+    globe.scene().add(moon);
+    moonRef.current = moon;
+    console.log('Moon created and added to scene, globe radius:', globeRadius, 'moon radius:', moonRadius);
+  };
+
+  const updateMoonPosition = () => {
+    if (moonRef.current && globeEl.current) {
+      const globeRadius = globeEl.current.getGlobeRadius();
+      const time = Date.now() * 0.001; // Current time in seconds
+      const radius = globeRadius * 6; // Orbit radius
+      const speed = 0.03; // Orbit speed
+
+      // Calculate new position
+      const x = Math.cos(time * speed) * radius;
+      const z = Math.sin(time * speed) * radius;
+
+      moonRef.current.position.set(x, 0, z);
+
+      // Make the moon face the Earth
+      moonRef.current.lookAt(0, 0, 0);
+
+      // Rotate the moon around its y-axis to show the same face to Earth
+      moonRef.current.rotateY(Math.PI);
+    }
   };
 
   return (
