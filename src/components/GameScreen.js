@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import StreetViewComponent from './StreetViewComponent';
-import gameRoundBgMusic from '../assets/audio/game-round-bg-music.mp3';
+import gameRoundBgMusic from '../assets/audio/game-round-bg-music-60.mp3';
 
 const GameScreen = ({ players, gameOptions = {}, profile }) => {
   const [location, setLocation] = useState(null);
