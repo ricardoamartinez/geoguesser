@@ -10,6 +10,17 @@ const GlobeComponent = () => {
   const [satellites, setSatellites] = useState([]);
   const sunLightRef = useRef();
   const globeMaterialRef = useRef();
+  const CLOUD_ALTITUDE = 0.02; // Increased from 0.015
+  const CLOUD_ROTATION_SPEED = 0.0003; // Reduced for slower rotation
+
+  // Add this state to control cloud visibility
+  const [showClouds, setShowClouds] = useState(false);
+
+  // Replace useState with useRef for cloudsMesh
+  const cloudsMeshRef = useRef(null);
+
+  // Moved animateRef inside the GlobeComponent to ensure it's scoped correctly
+  const animateRef = useRef(false);
 
   useEffect(() => {
     if (globeEl.current) {
@@ -93,16 +104,47 @@ const GlobeComponent = () => {
         createMoon(globe);
       }
 
-      // Start the animation loop
-      const animate = () => {
-        requestAnimationFrame(animate);
-        updateMoonPosition();
-        updateSunPosition();
-        globe.renderer().render(globe.scene(), globe.camera());
-      };
-      animate();
+      // Add clouds using useRef
+      if (!cloudsMeshRef.current) {
+        const globeRadius = globe.getGlobeRadius();
+        const geometry = new THREE.SphereGeometry(globeRadius * (1 + CLOUD_ALTITUDE), 75, 75);
+        const material = createCloudsMaterial();
+        const clouds = new THREE.Mesh(geometry, material);
+        clouds.renderOrder = 1;
+        cloudsMeshRef.current = clouds;
+        globe.scene().add(clouds);
+        console.log('Clouds added to the scene', clouds);
+        setShowClouds(true);
+      }
+
+      // Prevent multiple animate loops
+      if (!animateRef.current) {
+        animateRef.current = true;
+
+        const animate = () => {
+          requestAnimationFrame(animate);
+          updateMoonPosition();
+          updateSunPosition();
+          
+          if (globeMesh) {
+            globeMesh.rotation.y += 0.001; // Added rotation for the globe
+          }
+          
+          if (cloudsMeshRef.current) {
+            if (!globe.scene().children.includes(cloudsMeshRef.current)) {
+              console.log('Clouds not in scene, re-adding');
+              globe.scene().add(cloudsMeshRef.current);
+            }
+            cloudsMeshRef.current.rotation.y += CLOUD_ROTATION_SPEED;
+            console.log('Cloud rotation:', cloudsMeshRef.current.rotation.y);
+          }
+          
+          globe.renderer().render(globe.scene(), globe.camera());
+        };
+        animate();
+      }
     }
-  }, []);
+  }, []); // Changed dependency array from [cloudsMesh] to []
 
   const createSatellites = () => {
     const numSatellites = 100;
@@ -232,10 +274,10 @@ const GlobeComponent = () => {
 
   const updateSunPosition = () => {
     if (sunLightRef.current && globeMaterialRef.current) {
-      const time = Date.now() * 0.00003; // Even slower movement
+      const time = Date.now() * 0.00005; // Increased speed for faster sun movement
       const radius = 400; // Increased radius for more dramatic shadows
       const x = Math.cos(time) * radius;
-      const y = Math.abs(Math.sin(time)) * radius;
+      const y = Math.sin(time * 0.5) * radius; // Added variation in Y-axis for tilt
       const z = Math.sin(time) * radius;
 
       sunLightRef.current.position.set(x, y, z);
@@ -298,34 +340,84 @@ const GlobeComponent = () => {
           float diff = max(dot(bumpNormal, lightDir), 0.0);
           
           // Increase contrast of diffuse lighting
-          diff = smoothstep(0.1, 0.9, diff);
+          diff = smoothstep(0.2, 0.95, diff); // Adjusted for higher contrast
           
           vec3 diffuse = diff * vec3(1.0);
 
           vec3 texColor = texture2D(globeTexture, vUv).rgb;
 
           // Reduce ambient light for darker nights
-          vec3 ambient = texColor * 0.05;
+          vec3 ambient = texColor * 0.03; // Reduced ambient for darker nights
           
           // Increase intensity of lit areas
-          vec3 litColor = texColor * (diffuse * 1.5 + ambient);
+          vec3 litColor = texColor * (diffuse * 2.0 + ambient); // Increased lighting intensity
 
-          // Make night areas darker and bluer
+          // Make night areas significantly darker and bluer
           float nightIntensity = 1.0 - diff;
-          vec3 nightColor = vec3(0.02, 0.02, 0.08) * nightIntensity;
+          vec3 nightColor = vec3(0.01, 0.01, 0.05) * nightIntensity; // Darker night color
 
-          // Add a subtle blue atmosphere effect
-          vec3 atmosphere = vec3(0.1, 0.1, 0.3) * pow(1.0 - diff, 6.0);
+          // Add a more pronounced blue atmosphere effect
+          vec3 atmosphere = vec3(0.15, 0.15, 0.4) * pow(1.0 - diff, 8.0); // Enhanced atmosphere
 
           // Blend day and night colors
           vec3 finalColor = mix(nightColor, litColor, diff) + atmosphere;
 
-          // Enhance contrast
-          finalColor = pow(finalColor, vec3(1.2));
+          // Enhance contrast further
+          finalColor = pow(finalColor, vec3(1.3)); // Increased contrast
 
           gl_FragColor = vec4(finalColor, 1.0);
         }
       `,
+    });
+  };
+
+  // Add this function to create the clouds material
+  const createCloudsMaterial = () => {
+    const cloudTexture = new TextureLoader().load(
+      'https://raw.githubusercontent.com/turban/webgl-earth/master/images/fair_clouds_4k.png',
+      () => console.log('Cloud texture loaded successfully'),
+      undefined,
+      (error) => console.error('Error loading cloud texture:', error)
+    );
+
+    return new ShaderMaterial({
+      uniforms: {
+        cloudTexture: { value: cloudTexture },
+        fresnelColor: { value: new THREE.Color(0xffffff) },
+        fresnelPower: { value: 2 },
+      },
+      vertexShader: `
+        varying vec2 vUv;
+        varying vec3 vNormal;
+        varying vec3 vViewDir;
+        
+        void main() {
+          vUv = uv;
+          vNormal = normalize(normalMatrix * normal);
+          vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+          vViewDir = normalize(-mvPosition.xyz);
+          gl_Position = projectionMatrix * mvPosition;
+        }
+      `,
+      fragmentShader: `
+        uniform sampler2D cloudTexture;
+        uniform vec3 fresnelColor;
+        uniform float fresnelPower;
+        
+        varying vec2 vUv;
+        varying vec3 vNormal;
+        varying vec3 vViewDir;
+        
+        void main() {
+          vec4 cloudColor = texture2D(cloudTexture, vUv);
+          float fresnel = pow(1.0 - dot(vNormal, vViewDir), fresnelPower);
+          vec3 finalColor = mix(cloudColor.rgb, fresnelColor, fresnel);
+          gl_FragColor = vec4(finalColor, cloudColor.a * 0.8); // Increased from 0.7
+        }
+      `,
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
     });
   };
 
@@ -335,6 +427,7 @@ const GlobeComponent = () => {
         ref={globeEl}
         globeImageUrl="//unpkg.com/three-globe/example/img/earth-blue-marble.jpg"
         bumpImageUrl="//unpkg.com/three-globe/example/img/earth-topology.png"
+        cloudsImageUrl={null} // Set this to null to remove the default still clouds
         backgroundColor="rgba(0,0,0,0)"
         width={window.innerWidth}
         height={window.innerHeight}
